@@ -21,6 +21,7 @@ class AppLocalizations {
       // Navigation
       'nav_home': 'Ana Sayfa',
       'nav_chat': 'Sohbet',
+      'nav_dreams': 'Hayallerimiz',
       'nav_plans': 'Planlar',
       'nav_together': 'Birlikte',
       'nav_memories': 'Anılar',
@@ -149,6 +150,7 @@ class AppLocalizations {
       // Navigation
       'nav_home': 'Home',
       'nav_chat': 'Chat',
+      'nav_dreams': 'Bucket List',
       'nav_plans': 'Plans',
       'nav_together': 'Together',
       'nav_memories': 'Memories',

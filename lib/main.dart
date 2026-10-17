@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/providers/app_state_provider.dart';
 import 'core/providers/chat_provider.dart';
+import 'core/providers/dreams_provider.dart';
 import 'core/providers/memories_provider.dart';
 import 'core/providers/plans_provider.dart';
 import 'core/providers/together_provider.dart';
@@ -29,6 +30,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => DreamsProvider()),
         ChangeNotifierProvider(create: (_) => PlansProvider()),
         ChangeNotifierProvider(create: (_) => TogetherProvider()),
         ChangeNotifierProvider(create: (_) => MemoriesProvider()),

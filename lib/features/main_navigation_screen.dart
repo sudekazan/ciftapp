@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import '../core/localization/app_localizations.dart';
-import 'chat/screens/chat_screen.dart';
+import 'dreams/screens/dreams_screen.dart';
 import 'home/screens/home_screen.dart';
 import 'memories/screens/memories_screen.dart';
 import 'plans/screens/plans_screen.dart';
@@ -36,7 +36,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final pages = [
       HomeScreen(onTabChangeRequested: _onTabTapped),
-      const ChatScreen(),
+      const DreamsScreen(),
       const PlansScreen(),
       const TogetherScreen(),
       const MemoriesScreen(),
@@ -72,7 +72,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(0, Icons.home_rounded, Icons.home_outlined, l10n.text('nav_home')),
-                _buildNavItem(1, Icons.chat_bubble_rounded, Icons.chat_bubble_outline_rounded, l10n.text('nav_chat')),
+                _buildNavItem(1, Icons.auto_awesome_rounded, Icons.auto_awesome_outlined, l10n.text('nav_dreams')),
                 _buildNavItem(2, Icons.calendar_today_rounded, Icons.calendar_today_outlined, l10n.text('nav_plans')),
                 _buildNavItem(3, Icons.favorite_rounded, Icons.favorite_border_rounded, l10n.text('nav_together')),
                 _buildNavItem(4, Icons.photo_library_rounded, Icons.photo_library_outlined, l10n.text('nav_memories')),

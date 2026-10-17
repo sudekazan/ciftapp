@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ciftapp/core/providers/app_state_provider.dart';
 import 'package:ciftapp/core/providers/chat_provider.dart';
+import 'package:ciftapp/core/providers/dreams_provider.dart';
 import 'package:ciftapp/core/providers/memories_provider.dart';
 import 'package:ciftapp/core/providers/plans_provider.dart';
 import 'package:ciftapp/core/providers/together_provider.dart';
@@ -18,6 +19,7 @@ void main() {
         providers: [
           ChangeNotifierProvider(create: (_) => AppStateProvider()),
           ChangeNotifierProvider(create: (_) => ChatProvider()),
+          ChangeNotifierProvider(create: (_) => DreamsProvider()),
           ChangeNotifierProvider(create: (_) => PlansProvider()),
           ChangeNotifierProvider(create: (_) => TogetherProvider()),
           ChangeNotifierProvider(create: (_) => MemoriesProvider()),
@@ -40,6 +42,7 @@ void main() {
         providers: [
           ChangeNotifierProvider(create: (_) => AppStateProvider()),
           ChangeNotifierProvider(create: (_) => ChatProvider()),
+          ChangeNotifierProvider(create: (_) => DreamsProvider()),
           ChangeNotifierProvider(create: (_) => PlansProvider()),
           ChangeNotifierProvider(create: (_) => TogetherProvider()),
           ChangeNotifierProvider(create: (_) => MemoriesProvider()),
