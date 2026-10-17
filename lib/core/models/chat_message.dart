@@ -18,6 +18,7 @@ class ChatMessage {
   final bool isRead;
   final DateTime? scheduledUnlockDate;
   final bool isSurpriseUnlocked;
+  final String? reaction;
 
   ChatMessage({
     required this.id,
@@ -31,6 +32,7 @@ class ChatMessage {
     this.isRead = true,
     this.scheduledUnlockDate,
     this.isSurpriseUnlocked = false,
+    this.reaction,
   });
 
   bool get isLockedSurprise {
@@ -51,6 +53,7 @@ class ChatMessage {
     bool? isRead,
     DateTime? scheduledUnlockDate,
     bool? isSurpriseUnlocked,
+    String? reaction,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -64,6 +67,7 @@ class ChatMessage {
       isRead: isRead ?? this.isRead,
       scheduledUnlockDate: scheduledUnlockDate ?? this.scheduledUnlockDate,
       isSurpriseUnlocked: isSurpriseUnlocked ?? this.isSurpriseUnlocked,
+      reaction: reaction ?? this.reaction,
     );
   }
 }

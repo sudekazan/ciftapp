@@ -62,6 +62,13 @@ class AppStateProvider extends ChangeNotifier {
         startDate = DateTime.tryParse(startDateStr);
       }
 
+      final reunionDateStr = prefs.getString('ciftapp_reunion_date');
+      final reunionLoc = prefs.getString('ciftapp_reunion_loc');
+      DateTime? reunionDate;
+      if (reunionDateStr != null) {
+        reunionDate = DateTime.tryParse(reunionDateStr);
+      }
+
       _currentLanguage = lang;
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
 
@@ -74,6 +81,8 @@ class AppStateProvider extends ChangeNotifier {
         partnerName: partnerName,
         isPremium: isPrem,
         relationshipStartDate: startDate ?? _currentUser.relationshipStartDate,
+        nextReunionDate: reunionDate ?? _currentUser.nextReunionDate,
+        reunionLocation: reunionLoc ?? _currentUser.reunionLocation,
       );
     } catch (e) {
       debugPrint('Error loading preferences: $e');
@@ -130,6 +139,17 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('ciftapp_user_name', name);
+  }
+
+  Future<void> updateReunion({required DateTime date, required String location}) async {
+    _currentUser = _currentUser.copyWith(
+      nextReunionDate: date,
+      reunionLocation: location,
+    );
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ciftapp_reunion_date', date.toIso8601String());
+    await prefs.setString('ciftapp_reunion_loc', location);
   }
 
   Future<void> setLanguage(String langCode) async {

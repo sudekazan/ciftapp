@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -194,11 +195,57 @@ class DistanceHeaderCard extends StatelessWidget {
 
           if (!user.isPaired) ...[
             const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.vpn_key_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Senin Davet Kodun:', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                        Text(
+                          user.inviteCode,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: user.inviteCode));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Davet kodun kopyalandı! Partnerine gönder ❤️'),
+                          backgroundColor: AppColors.primary,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.primary),
+                    label: const Text('Kopyala', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      elevation: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
               l10n.text('unpaired_warning'),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.85),
-                fontSize: 12,
+                fontSize: 11.5,
               ),
               textAlign: TextAlign.center,
             ),

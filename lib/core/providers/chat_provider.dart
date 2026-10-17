@@ -111,6 +111,17 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  void toggleReaction(String messageId, {String reaction = '❤️'}) {
+    final index = _messages.indexWhere((m) => m.id == messageId);
+    if (index != -1) {
+      final currentReaction = _messages[index].reaction;
+      _messages[index] = _messages[index].copyWith(
+        reaction: currentReaction == reaction ? null : reaction,
+      );
+      notifyListeners();
+    }
+  }
+
   void sendThinkingOfYouMessage({required String senderId, required String senderName}) {
     final msg = ChatMessage(
       id: const Uuid().v4(),

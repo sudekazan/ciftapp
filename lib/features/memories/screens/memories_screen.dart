@@ -19,6 +19,8 @@ class MemoriesScreen extends StatefulWidget {
 
 class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  bool _onlyFavorites = false;
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -145,7 +148,20 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
 
   Widget _buildMemoryBookTab(ThemeData theme, bool isDark, AppLocalizations l10n) {
     final memoriesProvider = Provider.of<MemoriesProvider>(context);
-    final memories = memoriesProvider.memories;
+    final allMemories = memoriesProvider.memories;
+
+    final filteredMemories = allMemories.where((memory) {
+      if (_onlyFavorites && !memory.isFavorite) return false;
+      final query = _searchController.text.trim().toLowerCase();
+      if (query.isNotEmpty) {
+        final inTitle = memory.title.toLowerCase().contains(query);
+        final inNote = memory.note.toLowerCase().contains(query);
+        final inLocation = memory.location?.toLowerCase().contains(query) ?? false;
+        final inTags = memory.tags.any((t) => t.toLowerCase().contains(query));
+        return inTitle || inNote || inLocation || inTags;
+      }
+      return true;
+    }).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -209,91 +225,168 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
-        ...memories.map((memory) {
-          final dateStr = DateFormat('d MMMM yyyy').format(memory.date);
-          final firstImage = memory.primaryImageUrl;
-          final totalPhotos = memory.imageUrls.length;
+        // Search and Favorites Filter Bar
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Anılarda veya etiketlerde ara...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primary),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              avatar: Icon(
+                _onlyFavorites ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                size: 16,
+                color: _onlyFavorites ? Colors.redAccent : AppColors.primary,
+              ),
+              label: Text(_onlyFavorites ? 'Favoriler' : 'Tümü'),
+              selected: _onlyFavorites,
+              onSelected: (val) => setState(() => _onlyFavorites = val),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => MemoryDetailScreen(memory: memory)),
-                );
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (firstImage != null)
-                    Stack(
-                      children: [
-                        Container(
-                          height: 190,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: firstImage.startsWith('http')
-                                  ? NetworkImage(firstImage) as ImageProvider
-                                  : FileImage(File(firstImage)),
-                              fit: BoxFit.cover,
+        if (filteredMemories.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                Icon(Icons.search_off_rounded, size: 48, color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                const SizedBox(height: 12),
+                Text(
+                  _onlyFavorites ? 'Henüz favori anı eklemediniz ❤️' : 'Aramanızla eşleşen anı bulunamadı ✨',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          )
+        else
+          ...filteredMemories.map((memory) {
+            final dateStr = DateFormat('d MMMM yyyy').format(memory.date);
+            final firstImage = memory.primaryImageUrl;
+            final totalPhotos = memory.imageUrls.length;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => MemoryDetailScreen(memory: memory)),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (firstImage != null)
+                      Stack(
+                        children: [
+                          Container(
+                            height: 190,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: firstImage.startsWith('http')
+                                    ? NetworkImage(firstImage) as ImageProvider
+                                    : FileImage(File(firstImage)),
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
-                        ),
-                        // Photo Count Badge
-                        if (totalPhotos > 1)
-                          Positioned(
-                            bottom: 10,
-                            right: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.photo_library_rounded, color: Colors.white, size: 14),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '$totalPhotos Fotoğraf',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        // Mood Badge
-                        if (memory.mood != null)
+                          // Favorite Toggle Icon
                           Positioned(
                             top: 10,
-                            left: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.65),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                memory.mood!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                            right: 10,
+                            child: GestureDetector(
+                              onTap: () {
+                                memoriesProvider.toggleFavorite(memory.id);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.55),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  memory.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                  color: memory.isFavorite ? Colors.redAccent : Colors.white,
+                                  size: 18,
                                 ),
                               ),
                             ),
                           ),
-                      ],
-                    ),
+                          // Photo Count Badge
+                          if (totalPhotos > 1)
+                            Positioned(
+                              bottom: 10,
+                              right: 10,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.photo_library_rounded, color: Colors.white, size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$totalPhotos Fotoğraf',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          // Mood Badge
+                          if (memory.mood != null)
+                            Positioned(
+                              top: 10,
+                              left: 10,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.65),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  memory.mood!,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(

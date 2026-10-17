@@ -65,6 +65,50 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
     );
   }
 
+  void _showReceivedThinkingOfYouDialog(BuildContext context, String partnerName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: const BoxDecoration(
+                gradient: AppColors.heartGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 44),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '$partnerName Seni Düşündü! ❤️',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Mesafeler kalpleri ayıramaz. $partnerName az önce ekranındaki kalbe dokunarak sevgisini sana hissettirdi.',
+              style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _onTapHeart();
+              },
+              icon: const Icon(Icons.favorite_rounded, size: 18),
+              label: const Text('Ben de Seni Düşünüyorum 💖'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppStateProvider>(context);
@@ -118,13 +162,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                 tooltip: 'Partner Dokunuşu Simüle Et',
                 onPressed: () {
                   appState.receivePartnerThinkingOfYou();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${user.partnerName ?? "Partnerin"} az önce seni düşündü! ❤️'),
-                      backgroundColor: AppColors.secondary,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  _showReceivedThinkingOfYouDialog(context, user.partnerName ?? 'Can ❤️');
                 },
               ),
             ],

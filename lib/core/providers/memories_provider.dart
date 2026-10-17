@@ -117,6 +117,15 @@ class MemoriesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleFavorite(String id) {
+    final index = _memories.indexWhere((m) => m.id == id);
+    if (index != -1) {
+      final item = _memories[index];
+      _memories[index] = item.copyWith(isFavorite: !item.isFavorite);
+      notifyListeners();
+    }
+  }
+
   void addCountdown({
     required String titleTr,
     required String titleEn,

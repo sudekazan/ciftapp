@@ -7,6 +7,7 @@ class MemoryItem {
   final String? location;
   final String? mood; // Romantik, Eğlenceli, Kutlama, Macera, Huzur
   final List<String> tags;
+  final bool isFavorite;
 
   MemoryItem({
     required this.id,
@@ -18,6 +19,7 @@ class MemoryItem {
     this.location,
     this.mood,
     this.tags = const [],
+    this.isFavorite = false,
   }) : imageUrls = imageUrls ?? (imageUrl != null ? [imageUrl] : []);
 
   String? get primaryImageUrl => imageUrls.isNotEmpty ? imageUrls.first : null;
@@ -32,6 +34,7 @@ class MemoryItem {
     String? location,
     String? mood,
     List<String>? tags,
+    bool? isFavorite,
   }) {
     return MemoryItem(
       id: id ?? this.id,
@@ -42,6 +45,7 @@ class MemoryItem {
       location: location ?? this.location,
       mood: mood ?? this.mood,
       tags: tags ?? this.tags,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 }

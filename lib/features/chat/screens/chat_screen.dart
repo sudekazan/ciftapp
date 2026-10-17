@@ -444,63 +444,101 @@ class _ChatScreenState extends State<ChatScreen> {
     // Standard Text Message Bubble
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints: const BoxConstraints(maxWidth: 290),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isMe
-              ? AppColors.primary
-              : (isDark ? AppColors.darkCardBg : Colors.white),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
-            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
-          ),
-          border: Border.all(
-            color: isMe ? Colors.transparent : (isDark ? AppColors.darkDivider : AppColors.divider),
-          ),
-          boxShadow: [
-            if (!isMe && !isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      child: GestureDetector(
+        onDoubleTap: () {
+          Provider.of<ChatProvider>(context, listen: false).toggleReaction(message.id);
+        },
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            Text(
-              message.text,
-              style: TextStyle(
-                color: isMe ? Colors.white : (isDark ? Colors.white : AppColors.textPrimary),
-                fontSize: 14.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  timeStr,
-                  style: TextStyle(
-                    color: isMe ? Colors.white.withOpacity(0.7) : AppColors.textSecondary,
-                    fontSize: 10,
-                  ),
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              constraints: const BoxConstraints(maxWidth: 290),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isMe
+                    ? AppColors.primary
+                    : (isDark ? AppColors.darkCardBg : Colors.white),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
+                  bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
                 ),
-                if (isMe) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.done_all_rounded,
-                    color: Colors.white.withOpacity(0.8),
-                    size: 13,
+                border: Border.all(
+                  color: isMe ? Colors.transparent : (isDark ? AppColors.darkDivider : AppColors.divider),
+                ),
+                boxShadow: [
+                  if (!isMe && !isDark)
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.text,
+                    style: TextStyle(
+                      color: isMe ? Colors.white : (isDark ? Colors.white : AppColors.textPrimary),
+                      fontSize: 14.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          color: isMe ? Colors.white.withOpacity(0.7) : AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                      if (isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.done_all_rounded,
+                          color: Colors.white.withOpacity(0.8),
+                          size: 13,
+                        ),
+                      ],
+                    ],
                   ),
                 ],
-              ],
+              ),
             ),
+            if (message.reaction != null)
+              Positioned(
+                bottom: -2,
+                right: isMe ? null : 8,
+                left: isMe ? 8 : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    message.reaction!,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

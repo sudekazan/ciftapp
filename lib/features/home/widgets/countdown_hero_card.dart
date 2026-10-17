@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/models/user_model.dart';
 import '../../../core/providers/app_state_provider.dart';
 
 class CountdownHeroCard extends StatefulWidget {
@@ -28,6 +30,95 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
   void dispose() {
     _timer.cancel();
     super.dispose();
+  }
+
+  void _showEditReunionDialog(BuildContext context, UserModel user) {
+    DateTime selectedDate = user.nextReunionDate ?? DateTime.now().add(const Duration(days: 14));
+    final locController = TextEditingController(text: user.reunionLocation ?? 'İstanbul & Londra Buluşması ✈️');
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: const [
+                Icon(Icons.flight_takeoff_rounded, color: AppColors.primary, size: 22),
+                SizedBox(width: 8),
+                Text('Buluşmayı Güncelle', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: locController,
+                  decoration: const InputDecoration(
+                    labelText: 'Buluşma Yeri / Planı',
+                    prefixIcon: Icon(Icons.location_on_outlined, color: AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Buluşma Tarihi & Saati:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                ListTile(
+                  tileColor: isDark ? AppColors.darkSurface : AppColors.primarySoft,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  leading: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+                  title: Text(
+                    DateFormat('d MMMM yyyy, HH:mm').format(selectedDate),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  trailing: const Icon(Icons.edit_calendar_rounded, size: 18, color: AppColors.primary),
+                  onTap: () async {
+                    final pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
+                    );
+                    if (pickedDate != null && context.mounted) {
+                      final pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(selectedDate),
+                      );
+                      if (pickedTime != null) {
+                        setModalState(() {
+                          selectedDate = DateTime(
+                            pickedDate.year,
+                            pickedDate.month,
+                            pickedDate.day,
+                            pickedTime.hour,
+                            pickedTime.minute,
+                          );
+                        });
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              ElevatedButton(
+                onPressed: () async {
+                  await appState.updateReunion(
+                    date: selectedDate,
+                    location: locController.text.trim().isEmpty ? 'Buluşma Planı ✈️' : locController.text.trim(),
+                  );
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                child: const Text('Kaydet'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -61,40 +152,56 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.flight_land_rounded, color: AppColors.primary, size: 20),
                     ),
-                    child: const Icon(Icons.flight_land_rounded, color: AppColors.primary, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.text('next_reunion'),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.text('next_reunion'),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  user.reunionLocation ?? 'Buluşma Planı',
+                                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () => _showEditReunionDialog(context, user),
+                                child: const Icon(Icons.edit_note_rounded, size: 16, color: AppColors.primary),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      Text(
-                        user.reunionLocation ?? 'Buluşma Planı',
-                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              if (widget.onOpenPlans != null)
-                TextButton(
-                  onPressed: widget.onOpenPlans,
-                  child: const Text('Planla', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.primary),
+                tooltip: 'Buluşma Tarihini Değiştir',
+                onPressed: () => _showEditReunionDialog(context, user),
+              ),
             ],
           ),
           const SizedBox(height: 18),
