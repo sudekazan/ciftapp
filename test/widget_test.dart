@@ -34,7 +34,7 @@ void main() {
     expect(find.textContaining('ÇiftApp'), findsWidgets);
   });
 
-  testWidgets('InitialSetupScreen follows 3-step sequence: Name -> Start Date -> Pairing Space', (WidgetTester tester) async {
+  testWidgets('InitialSetupScreen follows 4-step sequence: Name -> Start Date -> Mode -> Pairing Space', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({'ciftapp_setup_completed': false});
 
     await tester.pumpWidget(
@@ -70,15 +70,28 @@ void main() {
     expect(find.text('Birlikte Olmaya Başladığımız Tarih 💍'), findsOneWidget);
     expect(find.textContaining('Gününüz'), findsWidgets);
 
-    // Tap "Bir Sonraki Adım: Çift Alanı"
-    final nextBtnFinder = find.text('Bir Sonraki Adım: Çift Alanı');
-    await tester.ensureVisible(nextBtnFinder);
+    // Tap "Bir Sonraki Adım: İlişki Modumuz"
+    final nextBtnStep2 = find.text('Bir Sonraki Adım: İlişki Modumuz');
+    await tester.ensureVisible(nextBtnStep2);
     await tester.pumpAndSettle();
-    await tester.tap(nextBtnFinder);
+    await tester.tap(nextBtnStep2);
     await tester.pumpAndSettle();
 
-    // Step 3: Verify Pairing space step is active
-    expect(find.text('3. Çift Alanı'), findsOneWidget);
+    // Step 3: Verify Mode selection step is active
+    expect(find.text('3. Modumuz'), findsOneWidget);
+    expect(find.text('Nasıl Bir Birlikteliğiniz Var? 🌍'), findsOneWidget);
+    expect(find.text('Uzak Mesafe İlişkisi Yaşıyoruz ✈️'), findsOneWidget);
+    expect(find.text('Aynı Evde Birlikte Yaşıyoruz 🏡'), findsOneWidget);
+
+    // Tap "Bir Sonraki Adım: Çift Alanı Kurulumu"
+    final nextBtnStep3 = find.text('Bir Sonraki Adım: Çift Alanı Kurulumu');
+    await tester.ensureVisible(nextBtnStep3);
+    await tester.pumpAndSettle();
+    await tester.tap(nextBtnStep3);
+    await tester.pumpAndSettle();
+
+    // Step 4: Verify Pairing space step is active
+    expect(find.text('4. Çift Alanı'), findsOneWidget);
     expect(find.text('Çift Alanınızı Başlatalım ✨'), findsOneWidget);
   });
 }

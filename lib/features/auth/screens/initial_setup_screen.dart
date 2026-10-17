@@ -15,7 +15,7 @@ class InitialSetupScreen extends StatefulWidget {
 }
 
 class _InitialSetupScreenState extends State<InitialSetupScreen> {
-  int _currentStep = 0; // 0: Name, 1: Date, 2: Pairing Choice
+  int _currentStep = 0; // 0: Name, 1: Date, 2: Mode, 3: Pairing Choice
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _partnerCodeController = TextEditingController();
@@ -47,8 +47,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     setState(() => _currentStep = 1);
   }
 
-  void _goToStep3Choice() {
+  void _goToStep3Mode() {
     setState(() => _currentStep = 2);
+  }
+
+  void _goToStep4Pairing() {
+    setState(() => _currentStep = 3);
   }
 
   Future<void> _pickDate() async {
@@ -123,7 +127,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Step Progress Header with Clear Labels
+            // 4-Step Progress Header with Clear Labels
             _buildStepIndicator(isDark),
 
             // Step Content
@@ -140,11 +144,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     final steps = [
       {'label': '1. Adınız', 'icon': Icons.person_rounded},
       {'label': '2. Tarihimiz', 'icon': Icons.calendar_month_rounded},
-      {'label': '3. Çift Alanı', 'icon': Icons.favorite_rounded},
+      {'label': '3. Modumuz', 'icon': Icons.public_rounded},
+      {'label': '4. Çift Alanı', 'icon': Icons.favorite_rounded},
     ];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
         children: [
           Row(
@@ -165,8 +170,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
-                                width: 22,
-                                height: 22,
+                                width: 20,
+                                height: 20,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isCompleted
@@ -174,16 +179,16 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                                       : (isCurrent ? AppColors.primary : Colors.transparent),
                                   border: Border.all(
                                     color: color,
-                                    width: 1.8,
+                                    width: 1.6,
                                   ),
                                 ),
                                 child: Center(
                                   child: isCompleted
-                                      ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                                      ? const Icon(Icons.check_rounded, size: 12, color: Colors.white)
                                       : Text(
                                           '${index + 1}',
                                           style: TextStyle(
-                                            fontSize: 11,
+                                            fontSize: 10,
                                             fontWeight: FontWeight.bold,
                                             color: isCurrent
                                                 ? Colors.white
@@ -192,12 +197,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                                         ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
                                   steps[index]['label'] as String,
                                   style: TextStyle(
-                                    fontSize: 11.5,
+                                    fontSize: 10.5,
                                     fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                                     color: isCurrent
                                         ? AppColors.primary
@@ -208,7 +213,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 5),
                           Container(
                             height: 3,
                             decoration: BoxDecoration(
@@ -223,10 +228,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     ),
                     if (index < steps.length - 1)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 1),
                         child: Icon(
                           Icons.chevron_right_rounded,
-                          size: 14,
+                          size: 13,
                           color: isDark ? AppColors.darkDivider : AppColors.divider,
                         ),
                       ),
@@ -247,8 +252,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
       case 1:
         return _buildStep2Date(theme, isDark);
       case 2:
+        return _buildStep3Mode(theme, isDark);
+      case 3:
       default:
-        return _buildStep3PairingChoice(theme, isDark, appState);
+        return _buildStep4PairingChoice(theme, isDark, appState);
     }
   }
 
@@ -262,7 +269,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
-          // Romantic Badge
           Container(
             padding: const EdgeInsets.all(14),
             decoration: const BoxDecoration(
@@ -395,7 +401,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Back Button & Step Title
           Row(
             children: [
               IconButton(
@@ -405,7 +410,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               ),
               const SizedBox(width: 4),
               const Text(
-                'Adım 2 / 3: Birliktelik Başlangıcı',
+                'Adım 2 / 4: Birliktelik Başlangıcı',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -590,7 +595,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '💡 Bu tarih Ana Sayfa sayaçlarınızda, Yıl Dönümü hatırlatıcılarında ve Anı Defteri’nde kullanılacaktır. İstediğiniz zaman profilinizden güncelleyebilirsiniz.',
+                  '💡 Bu tarih Ana Sayfa sayaçlarınızda, Yıl Dönümü hatırlatıcılarında ve Anı Defteri’nde kullanılacaktır.',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -602,19 +607,231 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 36),
 
-          // Next Button to Step 3
+          // Next Button to Step 3 (Mode)
           ElevatedButton(
-            onPressed: _goToStep3Choice,
+            onPressed: _goToStep3Mode,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
-                Text('Bir Sonraki Adım: Çift Alanı'),
+                Text('Bir Sonraki Adım: İlişki Modumuz'),
                 SizedBox(width: 8),
                 Icon(Icons.arrow_forward_rounded, size: 18),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // ADIM 3: İlişki Modunu Belirleme (Uzak Mesafe mi, Aynı Ev mi?)
+  // ==========================================
+  Widget _buildStep3Mode(ThemeData theme, bool isDark) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => setState(() => _currentStep = 1),
+                tooltip: 'Geri: Tarihi Değiştir',
+              ),
+              const SizedBox(width: 4),
+              const Text(
+                'Adım 3 / 4: İlişki Modu',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Nasıl Bir Birlikteliğiniz Var? 🌍',
+            style: theme.textTheme.displayLarge?.copyWith(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'İlişkinizin durumuna göre ana sayfanız ve öne çıkan araçlar özelleştirilir. İstediğiniz zaman Profil sayfasından değiştirebilirsiniz.',
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.5),
+          ),
+          const SizedBox(height: 24),
+
+          // Mod 1: Uzak Mesafe Kartı
+          _buildModeSelectionCard(
+            mode: RelationshipMode.longDistance,
+            title: 'Uzak Mesafe İlişkisi Yaşıyoruz ✈️',
+            badge: 'Ayrı Şehirler veya Ülkeler',
+            desc: 'Ayrı yerlerde olsanız bile aradaki mesafeleri kaldıran araçlar:',
+            features: [
+              'İki şehir arası çift saat dilimi (Dual Clock)',
+              'Büyük buluşma günü canlı geri sayım sayacı',
+              '"Seni Düşünüyorum" anlık sevgi dalgası dokunuşu',
+            ],
+            icon: Icons.flight_takeoff_rounded,
+            theme: theme,
+            isDark: isDark,
+          ),
+          const SizedBox(height: 16),
+
+          // Mod 2: Aynı Evde Yaşıyoruz Kartı
+          _buildModeSelectionCard(
+            mode: RelationshipMode.coLiving,
+            title: 'Aynı Evde Birlikte Yaşıyoruz 🏡',
+            badge: 'Aynı Çatı Altında',
+            desc: 'Aynı evi paylaşan çiftler için günlük hayatı kolaylaştıran araçlar:',
+            features: [
+              'Ortak ev işleri ve görev paylaşımı (Temizlik, yemek vb.)',
+              'Canlı ortak market & alışveriş listesi',
+              'Günün planı ve ev bütçesi takibi',
+            ],
+            icon: Icons.home_rounded,
+            theme: theme,
+            isDark: isDark,
+          ),
+          const SizedBox(height: 36),
+
+          // Next Button to Step 4 (Pairing)
+          ElevatedButton(
+            onPressed: _goToStep4Pairing,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text('Bir Sonraki Adım: Çift Alanı Kurulumu'),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded, size: 18),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeSelectionCard({
+    required RelationshipMode mode,
+    required String title,
+    required String badge,
+    required String desc,
+    required List<String> features,
+    required IconData icon,
+    required ThemeData theme,
+    required bool isDark,
+  }) {
+    final isSelected = _selectedMode == mode;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedMode = mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppColors.primaryDark.withOpacity(0.25) : Colors.white)
+              : (isDark ? AppColors.darkCardBg : AppColors.background),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : (isDark ? AppColors.darkDivider : AppColors.divider),
+            width: isSelected ? 2.5 : 1,
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.12),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : (isDark ? AppColors.darkSurface : AppColors.primarySoft),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected ? Colors.white : AppColors.primary,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: isSelected ? AppColors.primary : null,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.black.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          badge,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  isSelected ? Icons.check_circle_rounded : Icons.radio_button_off_rounded,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  size: 24,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              desc,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            ...features.map((feat) => Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: Text(
+                      feat,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textPrimary,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
       ),
     );
   }
@@ -644,9 +861,11 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   }
 
   // ==========================================
-  // ADIM 3: Çift Alanı Kurulumu (Partner Eşleşmesi)
+  // ADIM 4: Çift Alanı Kurulumu (Partner Eşleşmesi)
   // ==========================================
-  Widget _buildStep3PairingChoice(ThemeData theme, bool isDark, AppStateProvider appState) {
+  Widget _buildStep4PairingChoice(ThemeData theme, bool isDark, AppStateProvider appState) {
+    final modeName = _selectedMode == RelationshipMode.longDistance ? 'Uzak Mesafe ✈️' : 'Birlikte Yaşıyoruz 🏡';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
       child: Column(
@@ -656,12 +875,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
-                onPressed: () => setState(() => _currentStep = 1),
-                tooltip: 'Geri: Tarihi Değiştir',
+                onPressed: () => setState(() => _currentStep = 2),
+                tooltip: 'Geri: Modu Değiştir',
               ),
               const SizedBox(width: 4),
               const Text(
-                'Adım 3 / 3: Çift Alanı Kurulumu',
+                'Adım 4 / 4: Çift Alanı Kurulumu',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -677,7 +896,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Partnerinizin oluşturduğu bir koda mı katılmak istersiniz, yoksa yeni bir alan mı başlatacaksınız?',
+            '$modeName modunda ortak alanınızı başlatmak için bir seçenek belirleyin:',
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
           ),
           const SizedBox(height: 20),
@@ -720,7 +939,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           _buildChoiceCard(
             id: 'create_new',
             title: 'Yeni Çift Alanı Başlat ✨',
-            subtitle: 'Alanınızı kurun, ilişkinizin modunu seçin ve partnerinizi davet edin.',
+            subtitle: 'Alanınızı kurun ve partnerinizi davet ederek birlikte başlayın.',
             isSelected: _pathChoice == 'create_new',
             theme: theme,
             isDark: isDark,
@@ -730,32 +949,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('İlişki Modunuzu Seçin:', style: theme.textTheme.titleMedium?.copyWith(fontSize: 13, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildMiniModeChip(
-                                mode: RelationshipMode.longDistance,
-                                title: 'Uzak Mesafe',
-                                icon: Icons.flight_takeoff_rounded,
-                                isSelected: _selectedMode == RelationshipMode.longDistance,
-                                theme: theme,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildMiniModeChip(
-                                mode: RelationshipMode.coLiving,
-                                title: 'Birlikte Yaşıyoruz',
-                                icon: Icons.home_rounded,
-                                isSelected: _selectedMode == RelationshipMode.coLiving,
-                                theme: theme,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -890,43 +1083,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               ),
             ),
             if (child != null) child,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMiniModeChip({
-    required RelationshipMode mode,
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required ThemeData theme,
-  }) {
-    return GestureDetector(
-      onTap: () => setState(() => _selectedMode = mode),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.divider,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: isSelected ? Colors.white : AppColors.textSecondary),
-            const SizedBox(width: 6),
-            Text(
-              title,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontSize: 11.5,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              ),
-            ),
           ],
         ),
       ),
