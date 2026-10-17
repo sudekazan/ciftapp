@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>ÇiftApp, anılarınıza ve profilinize fotoğraf çekip ekleyebilmeniz için kamera erişimine ihtiyaç duyar.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ÇiftApp, sevgilinizle paylaştığınız anıları ve fotoğrafları seçebilmeniz için fotoğraf galerisi erişimine ihtiyaç duyar.</string>
 </dict>
 </plist>

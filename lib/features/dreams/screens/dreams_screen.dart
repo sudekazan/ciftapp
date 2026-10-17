@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/love_note_item.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/dreams_provider.dart';
@@ -268,14 +269,15 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: const [
-            Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 22),
-            SizedBox(width: 8),
-            Text('Hayaller & Notlar', style: TextStyle(fontWeight: FontWeight.w800)),
+          children: [
+            const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 22),
+            const SizedBox(width: 8),
+            Text(l10n.text('nav_dreams'), style: const TextStyle(fontWeight: FontWeight.w800)),
           ],
         ),
         bottom: TabBar(
@@ -285,9 +287,9 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
           indicatorColor: AppColors.primary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-          tabs: const [
-            Tab(icon: Icon(Icons.stars_rounded, size: 20), text: 'Hayal Listesi 🌟'),
-            Tab(icon: Icon(Icons.mark_email_read_rounded, size: 20), text: 'Aşk Kapsülü 💌'),
+          tabs: [
+            Tab(icon: const Icon(Icons.stars_rounded, size: 20), text: l10n.text('dreams_tab_bucket')),
+            Tab(icon: const Icon(Icons.mark_email_read_rounded, size: 20), text: l10n.text('dreams_tab_capsule')),
           ],
         ),
       ),
@@ -309,7 +311,10 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: Text(_tabController.index == 0 ? 'Hayal Ekle' : 'Not Bırak', style: const TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(
+          _tabController.index == 0 ? l10n.text('dreams_add_dream') : l10n.text('dreams_add_note'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

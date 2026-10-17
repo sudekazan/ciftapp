@@ -128,7 +128,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         child: Column(
           children: [
             // 4-Step Progress Header with Clear Labels
-            _buildStepIndicator(isDark),
+            _buildStepIndicator(isDark, appState),
 
             // Step Content
             Expanded(
@@ -140,7 +140,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     );
   }
 
-  Widget _buildStepIndicator(bool isDark) {
+  Widget _buildStepIndicator(bool isDark, AppStateProvider appState) {
     final steps = [
       {'label': '1. Adınız', 'icon': Icons.person_rounded},
       {'label': '2. Tarihimiz', 'icon': Icons.calendar_month_rounded},
@@ -149,9 +149,48 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.favorite_rounded, color: AppColors.primary, size: 18),
+                  SizedBox(width: 6),
+                  Text('ÇiftApp', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16)),
+                ],
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  final nextLang = appState.currentLanguage == 'tr' ? 'en' : 'tr';
+                  appState.setLanguage(nextLang);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    color: AppColors.primary.withOpacity(0.08),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.language_rounded, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        appState.currentLanguage.toUpperCase(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Row(
             children: List.generate(steps.length, (index) {
               final isCompleted = _currentStep > index;

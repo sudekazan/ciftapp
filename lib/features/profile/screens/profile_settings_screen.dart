@@ -163,7 +163,9 @@ class ProfileSettingsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          user.isPaired ? 'Bağlı: ${user.partnerName ?? "Partner"}' : 'Henüz eşleşilmedi',
+                          user.isPaired
+                              ? '${l10n.text('connected_with')} ${user.partnerName ?? "Partner"}'
+                              : l10n.text('unpaired_warning'),
                           style: TextStyle(
                             color: user.isPaired ? AppColors.accentTeal : AppColors.primary,
                             fontSize: 13,
@@ -176,7 +178,7 @@ class ProfileSettingsScreen extends StatelessWidget {
                           child: Row(
                             children: [
                               Text(
-                                '${user.daysTogether} gündür birlikte',
+                                '${user.daysTogether} ${l10n.text('profile_days_together_suffix')}',
                                 style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                               ),
                               const SizedBox(width: 4),
@@ -222,14 +224,14 @@ class ProfileSettingsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.isPremium ? 'ÇiftApp Premium Aktif ✨' : 'ÇiftApp Premium’a Geçin',
+                          user.isPremium ? l10n.text('profile_premium_active') : l10n.text('profile_upgrade_premium'),
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           user.isPremium
-                              ? 'Tüm ayrıcalıklar iki partner için de açık.'
-                              : 'Sınırsız anı, sesli notlar ve sürpriz mesajlar.',
+                              ? l10n.text('feature_single_payment')
+                              : l10n.text('premium_subtitle'),
                           style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
                         ),
                       ],
@@ -243,15 +245,15 @@ class ProfileSettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Section 1: Partner & Mode & Dates
-          _buildSectionHeader(theme, 'İlişki & Eşleşme'),
+          _buildSectionHeader(theme, l10n.text('profile_section_relationship')),
           Card(
             child: Column(
               children: [
                 ListTile(
                   leading: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
-                  title: const Text('Birliktelik Başlangıç Tarihi'),
+                  title: Text(l10n.text('profile_start_date')),
                   subtitle: Text(
-                    '${DateFormat('d MMMM yyyy').format(user.relationshipStartDate)} (${user.daysTogether} gün)',
+                    '${DateFormat('d MMMM yyyy').format(user.relationshipStartDate)} (${user.daysTogether} ${l10n.text('days_together')})',
                   ),
                   trailing: const Icon(Icons.edit_calendar_rounded, size: 20),
                   onTap: () => _showChangeStartDatePicker(context, user.relationshipStartDate),
@@ -260,7 +262,7 @@ class ProfileSettingsScreen extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.favorite_outline_rounded, color: AppColors.primary),
                   title: Text(l10n.text('partner_pairing')),
-                  subtitle: Text(user.isPaired ? 'Davet Kodu: ${user.inviteCode}' : 'Eşleşme kodunu paylaş veya gir'),
+                  subtitle: Text(user.isPaired ? '${l10n.text('your_invite_code')}: ${user.inviteCode}' : l10n.text('unpaired_warning')),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
                     Navigator.of(context).push(
@@ -292,7 +294,7 @@ class ProfileSettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Section 2: Preferences
-          _buildSectionHeader(theme, 'Uygulama Tercihleri'),
+          _buildSectionHeader(theme, l10n.text('profile_section_preferences')),
           Card(
             child: Column(
               children: [
@@ -317,7 +319,7 @@ class ProfileSettingsScreen extends StatelessWidget {
                     appState.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     color: AppColors.secondary,
                   ),
-                  title: const Text('Karanlık Mod'),
+                  title: Text(l10n.text('profile_dark_mode')),
                   value: appState.isDarkMode,
                   onChanged: (_) => appState.toggleTheme(),
                 ),
@@ -327,7 +329,7 @@ class ProfileSettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Section 3: Privacy & Legal
-          _buildSectionHeader(theme, 'Güvenlik & Yasal'),
+          _buildSectionHeader(theme, l10n.text('profile_section_legal')),
           Card(
             child: Column(
               children: [
