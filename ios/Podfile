@@ -42,4 +42,15 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
     end
   end
+
+  # FlutterSceneLifeCycleDelegate uyumluluk yaması (Flutter 3.35 engine uyumu)
+  Dir.glob(File.expand_path('~/.pub-cache/hosted/pub.dev/firebase_auth-*/ios/firebase_auth/Sources/firebase_auth/FLTFirebaseAuthPlugin.swift')).each do |file_path|
+    if File.exist?(file_path)
+      content = File.read(file_path)
+      target_line = 'extension FLTFirebaseAuthPlugin: FlutterSceneLifeCycleDelegate {}'
+      if content.include?(target_line) && !content.include?("// #{target_line}")
+        File.write(file_path, content.gsub(target_line, "// #{target_line}"))
+      end
+    end
+  end
 end
