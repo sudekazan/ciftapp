@@ -55,12 +55,13 @@ class UserModel {
     String? reunionLocation,
     DateTime? lastThinkingOfYou,
     String? lastThinkingSender,
+    bool clearPartner = false,
   }) {
     return UserModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      partnerId: partnerId ?? this.partnerId,
-      partnerName: partnerName ?? this.partnerName,
+      partnerId: clearPartner ? null : (partnerId ?? this.partnerId),
+      partnerName: clearPartner ? null : (partnerName ?? this.partnerName),
       inviteCode: inviteCode ?? this.inviteCode,
       isPaired: isPaired ?? this.isPaired,
       relationshipStartDate: relationshipStartDate ?? this.relationshipStartDate,

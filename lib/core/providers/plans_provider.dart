@@ -1,96 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import '../models/model_json.dart';
 import '../models/plan_item.dart';
+import '../services/local_store.dart';
 
 class PlansProvider extends ChangeNotifier {
+  static const _eventsKey = 'plan_events';
+  static const _tasksKey = 'plan_tasks';
+  static const _shoppingKey = 'plan_shopping';
+
   final List<CalendarEvent> _events = [];
   final List<TaskItem> _tasks = [];
   final List<ShoppingItem> _shoppingList = [];
+  bool _isLoaded = false;
 
   List<CalendarEvent> get events => List.unmodifiable(_events);
   List<TaskItem> get tasks => List.unmodifiable(_tasks);
   List<ShoppingItem> get shoppingList => List.unmodifiable(_shoppingList);
+  bool get isLoaded => _isLoaded;
 
   int get pendingTasksCount => _tasks.where((t) => !t.isCompleted).length;
   int get pendingShoppingCount => _shoppingList.where((s) => !s.isBought).length;
 
   PlansProvider() {
-    _loadSampleData();
+    _load();
   }
 
-  void _loadSampleData() {
-    final now = DateTime.now();
+  Future<void> _load() async {
+    final events = await LocalStore.loadList(_eventsKey, CalendarEventJson.fromJson);
+    final tasks = await LocalStore.loadList(_tasksKey, TaskItemJson.fromJson);
+    final shopping = await LocalStore.loadList(_shoppingKey, ShoppingItemJson.fromJson);
+    _events
+      ..clear()
+      ..addAll(events);
+    _tasks
+      ..clear()
+      ..addAll(tasks);
+    _shoppingList
+      ..clear()
+      ..addAll(shopping);
+    _isLoaded = true;
+    notifyListeners();
+  }
 
-    _events.addAll([
-      CalendarEvent(
-        id: const Uuid().v4(),
-        title: 'Havaalanı Karşılama ✈️',
-        description: 'Buluşma günü! Terminal 2 saat 14:30',
-        date: now.add(const Duration(days: 14)),
-        category: 'travel',
-      ),
-      CalendarEvent(
-        id: const Uuid().v4(),
-        title: 'Online Film Randevusu 🍿',
-        description: 'La La Land izliyoruz',
-        date: now.add(const Duration(days: 2, hours: 20)),
-        category: 'date',
-      ),
-      CalendarEvent(
-        id: const Uuid().v4(),
-        title: '1. Yıl Dönümümüz 💍',
-        description: 'Birlikte 365 gün tamamlanıyor!',
-        date: now.add(const Duration(days: 23)),
-        category: 'anniversary',
-      ),
-    ]);
+  Future<void> _saveEvents() =>
+      LocalStore.saveList(_eventsKey, _events, (e) => e.toJson());
 
-    _tasks.addAll([
-      TaskItem(
-        id: const Uuid().v4(),
-        title: 'Buluşma için biletleri kontrol et',
-        isCompleted: false,
-        assignedTo: 'me',
-        dueDate: now.add(const Duration(days: 3)),
-      ),
-      TaskItem(
-        id: const Uuid().v4(),
-        title: 'Fotoğraf albümü için kareleri seç',
-        isCompleted: false,
-        assignedTo: 'partner',
-        dueDate: now.add(const Duration(days: 5)),
-      ),
-      TaskItem(
-        id: const Uuid().v4(),
-        title: 'Rezervasyon yaptır (İtalyan restoranı)',
-        isCompleted: true,
-        assignedTo: 'both',
-      ),
-    ]);
+  Future<void> _saveTasks() =>
+      LocalStore.saveList(_tasksKey, _tasks, (t) => t.toJson());
 
-    _shoppingList.addAll([
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Lavanta Kokulu Mum',
-        isBought: false,
-        category: 'home',
-        addedBy: 'Sude',
-      ),
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Kahve Çekirdeği (Filtre)',
-        isBought: false,
-        category: 'market',
-        addedBy: 'Can',
-      ),
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Ortak polar battaniye',
-        isBought: true,
-        category: 'home',
-        addedBy: 'Sude',
-      ),
-    ]);
+  Future<void> _saveShopping() =>
+      LocalStore.saveList(_shoppingKey, _shoppingList, (s) => s.toJson());
+
+  /// Clears all in-memory and persisted data (account deletion).
+  Future<void> clearAll() async {
+    _events.clear();
+    _tasks.clear();
+    _shoppingList.clear();
+    await _saveEvents();
+    await _saveTasks();
+    await _saveShopping();
+    notifyListeners();
   }
 
   // Calendar
@@ -103,11 +73,13 @@ class PlansProvider extends ChangeNotifier {
       category: category,
     ));
     notifyListeners();
+    _saveEvents();
   }
 
   void deleteEvent(String id) {
     _events.removeWhere((e) => e.id == id);
     notifyListeners();
+    _saveEvents();
   }
 
   // Tasks
@@ -120,6 +92,7 @@ class PlansProvider extends ChangeNotifier {
       isCompleted: false,
     ));
     notifyListeners();
+    _saveTasks();
   }
 
   void toggleTask(String id) {
@@ -127,12 +100,14 @@ class PlansProvider extends ChangeNotifier {
     if (index != -1) {
       _tasks[index] = _tasks[index].copyWith(isCompleted: !_tasks[index].isCompleted);
       notifyListeners();
+      _saveTasks();
     }
   }
 
   void deleteTask(String id) {
     _tasks.removeWhere((t) => t.id == id);
     notifyListeners();
+    _saveTasks();
   }
 
   // Shopping
@@ -145,6 +120,7 @@ class PlansProvider extends ChangeNotifier {
       isBought: false,
     ));
     notifyListeners();
+    _saveShopping();
   }
 
   void toggleShoppingItem(String id) {
@@ -152,11 +128,13 @@ class PlansProvider extends ChangeNotifier {
     if (index != -1) {
       _shoppingList[index] = _shoppingList[index].copyWith(isBought: !_shoppingList[index].isBought);
       notifyListeners();
+      _saveShopping();
     }
   }
 
   void deleteShoppingItem(String id) {
     _shoppingList.removeWhere((s) => s.id == id);
     notifyListeners();
+    _saveShopping();
   }
 }

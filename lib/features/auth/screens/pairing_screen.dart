@@ -45,15 +45,17 @@ class _PairingScreenState extends State<PairingScreen> {
 
   void _shareCode(String code) {
     Share.share(
-      'ÇiftApp\'te seninle özel alanımızı oluşturalım! Davet kodum: $code\nUygulamayı indir ve kodumu girerek eşleşelim ❤️',
-      subject: 'ÇiftApp Partner Daveti',
+      'Yanyana\'da seninle özel alanımızı oluşturalım! Davet kodum: $code\nUygulamayı indir ve kodumu girerek eşleşelim ❤️',
+      subject: 'Yanyana Partner Daveti',
     );
   }
 
   Future<void> _submitCode() async {
-    final code = _codeController.text.trim();
-    if (code.isEmpty) {
-      setState(() => _errorMessage = 'Lütfen partnerinizin kodunu girin.');
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    final code = _codeController.text.trim().toUpperCase();
+    final error = appState.validatePartnerCode(code);
+    if (error != null) {
+      setState(() => _errorMessage = error);
       return;
     }
 
@@ -65,32 +67,38 @@ class _PairingScreenState extends State<PairingScreen> {
       _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
+    try {
+      await appState.pairWithCode(code);
+      if (!mounted) return;
 
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
-    await appState.pairWithCode(code);
+      setState(() => _isConnecting = false);
 
-    setState(() => _isConnecting = false);
+      if (widget.isModal) {
+        nav.pop();
+      }
 
-    if (widget.isModal) {
-      nav.pop();
-    }
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: const [
-            Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Partnerinizle başarıyla eşleştiniz! ❤️'),
-          ],
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('Partnerinizle başarıyla eşleştiniz! ❤️'),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isConnecting = false;
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    }
   }
 
   @override
@@ -124,7 +132,7 @@ class _PairingScreenState extends State<PairingScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -144,7 +152,7 @@ class _PairingScreenState extends State<PairingScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'İki telefonu birbirine bağlayarak sohbet, anılar, takvim ve günün sorusunu ortak alanınızda paylaşın.',
+              'İki telefonu birbirine bağlayarak anılar, takvim ve günün sorusunu ortak alanınızda paylaşın.',
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -162,7 +170,7 @@ class _PairingScreenState extends State<PairingScreen> {
                 boxShadow: [
                   if (!isDark)
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withValues(alpha: 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -180,7 +188,7 @@ class _PairingScreenState extends State<PairingScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.primarySoft,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.primaryLight.withOpacity(0.5)),
+                      border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       appState.currentUser.inviteCode,
@@ -262,7 +270,7 @@ class _PairingScreenState extends State<PairingScreen> {
                     controller: _codeController,
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
-                      hintText: 'Örn: CFT-9821',
+                      hintText: 'Örn: CFT-K7M2QX',
                       prefixIcon: const Icon(Icons.vpn_key_rounded, color: AppColors.primary),
                       errorText: _errorMessage,
                     ),
@@ -282,58 +290,6 @@ class _PairingScreenState extends State<PairingScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
-
-            // Demo Mode helper for testing
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.secondarySoft.withOpacity(isDark ? 0.2 : 0.6),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.secondaryLight.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.auto_awesome_rounded, color: AppColors.secondary, size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Geliştirme & Test Eşleşmesi',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontSize: 14,
-                            color: isDark ? Colors.white : AppColors.secondary,
-                          ),
-                        ),
-                        Text(
-                          'İkinci bir cihaza ihtiyaç duymadan simüle edilmiş partnerle ("Can ❤️") hemen test edin.',
-                          style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      final nav = Navigator.of(context);
-                      final messenger = ScaffoldMessenger.of(context);
-                      await appState.activateDemoPairing();
-                      if (widget.isModal) {
-                        nav.pop();
-                      }
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Test partneri Can ❤️ ile eşleşildi!'),
-                          backgroundColor: AppColors.secondary,
-                        ),
-                      );
-                    },
-                    child: const Text('Bağla', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),

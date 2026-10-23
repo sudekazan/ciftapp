@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/memories_provider.dart';
+import '../../../core/services/photo_storage.dart';
 
 class AddMemoryScreen extends StatefulWidget {
   const AddMemoryScreen({super.key});
@@ -25,6 +26,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
   final List<String> _tags = [];
 
   final ImagePicker _picker = ImagePicker();
+  bool _isSaving = false;
 
   final List<String> _moodOptions = [
     'Romantik ❤️',
@@ -42,14 +44,6 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
     'Sahil 🌊',
     'Havalimanı ✈️',
     'Kapadokya 🎈',
-  ];
-
-  final List<String> _samplePhotoPresets = [
-    'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
   ];
 
   @override
@@ -72,22 +66,14 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
         });
       }
     } catch (e) {
-      // If native picker isn't available or running in simulator/web without permission, add sample photo
-      _addSamplePhoto();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fotoğraflara erişilemedi. Lütfen izinleri kontrol edin.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
-  }
-
-  void _addSamplePhoto() {
-    setState(() {
-      final nextIndex = _selectedImageUrls.length % _samplePhotoPresets.length;
-      _selectedImageUrls.add(_samplePhotoPresets[nextIndex]);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fotoğraf eklendi! 📸'),
-        duration: Duration(milliseconds: 1200),
-      ),
-    );
   }
 
   void _addTag() {
@@ -101,7 +87,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
     }
   }
 
-  void _saveMemory() {
+  Future<void> _saveMemory() async {
     final title = _titleController.text.trim();
     final note = _noteController.text.trim();
 
@@ -115,38 +101,57 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
       return;
     }
 
-    // If user didn't add any photo, add a default romantic photo
-    if (_selectedImageUrls.isEmpty) {
-      _selectedImageUrls.add(_samplePhotoPresets.first);
-    }
-
     final memoriesProvider = Provider.of<MemoriesProvider>(context, listen: false);
-    memoriesProvider.addMemory(
-      title: title,
-      note: note.isNotEmpty ? note : 'Birlikte geçirdiğimiz çok özel bir an...',
-      date: _selectedDate,
-      location: _locationController.text.trim().isNotEmpty ? _locationController.text.trim() : null,
-      mood: _selectedMood,
-      imageUrls: _selectedImageUrls,
-      tags: _tags.isNotEmpty ? _tags : ['Aşk'],
-    );
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
 
-    Navigator.of(context).pop();
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: const [
-            Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Yeni anınız başarıyla deftere kaydedildi! ❤️'),
-          ],
+    try {
+      final persistedPaths = <String>[];
+      for (final path in _selectedImageUrls) {
+        persistedPaths.add(path.startsWith('http') ? path : await PhotoStorage.persist(path));
+      }
+
+      memoriesProvider.addMemory(
+        title: title,
+        note: note,
+        date: _selectedDate,
+        location: _locationController.text.trim().isNotEmpty ? _locationController.text.trim() : null,
+        mood: _selectedMood,
+        imageUrls: persistedPaths,
+        tags: List<String>.from(_tags),
+      );
+
+      if (!mounted) return;
+      navigator.pop();
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('Yeni anınız başarıyla deftere kaydedildi! ❤️'),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Kayıt sırasında bir hata oluştu: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -161,9 +166,15 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: ElevatedButton.icon(
-              onPressed: _saveMemory,
-              icon: const Icon(Icons.check_rounded, size: 18),
-              label: const Text('Kaydet'),
+              onPressed: _isSaving ? null : _saveMemory,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.check_rounded, size: 18),
+              label: Text(_isSaving ? 'Yükleniyor...' : 'Kaydet'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 minimumSize: const Size(90, 38),
@@ -209,7 +220,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                         color: isDark ? AppColors.darkCardBg : AppColors.primarySoft,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.5),
+                          color: AppColors.primary.withValues(alpha: 0.5),
                           width: 1.5,
                         ),
                       ),
@@ -227,39 +238,6 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-
-                  // Pick Sample Photo Preset Button (for simulator & rapid testing)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: GestureDetector(
-                      onTap: _addSamplePhoto,
-                      child: Container(
-                        width: 90,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkSurface : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isDark ? AppColors.darkDivider : AppColors.divider,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.auto_awesome_rounded, color: AppColors.secondary, size: 26),
-                            SizedBox(height: 4),
-                            Text(
-                              '+ Örnek Kare',
-                              style: TextStyle(
-                                color: AppColors.secondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                   ),

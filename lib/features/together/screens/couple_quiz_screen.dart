@@ -41,7 +41,7 @@ class CoupleQuizScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
@@ -63,7 +63,7 @@ class CoupleQuizScreen extends StatelessWidget {
                         Text(
                           '$matchCount / ${quizList.length} soruda aynı cevabı verdiniz! 🎉',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.85),
+                            color: Colors.white.withValues(alpha: 0.85),
                             fontSize: 13,
                           ),
                         ),
@@ -103,7 +103,7 @@ class CoupleQuizScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.accentTeal.withOpacity(0.15),
+                                color: AppColors.accentTeal.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Row(
@@ -137,7 +137,7 @@ class CoupleQuizScreen extends StatelessWidget {
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           decoration: BoxDecoration(
                             color: isMyChoice
-                                ? (isDark ? AppColors.primaryDark.withOpacity(0.4) : AppColors.primarySoft)
+                                ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.4) : AppColors.primarySoft)
                                 : (isDark ? AppColors.darkSurface : AppColors.background),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(

@@ -41,13 +41,6 @@ class PremiumFeatures {
       'desc_en': 'Store all your memories and photos in high resolution.',
     },
     {
-      'icon': 'mic',
-      'title_tr': 'Sesli Notlar & Sürpriz Mesajlar',
-      'title_en': 'Voice Notes & Surprise Messages',
-      'desc_tr': 'Zaman ayarlı açılan aşk notları ve sesli mesajlar gönderin.',
-      'desc_en': 'Send timed love surprises and high-fidelity voice notes.',
-    },
-    {
       'icon': 'gamepad',
       'title_tr': 'Tüm Çift Oyunları & Testler',
       'title_en': 'All Couple Games & Quizzes',

@@ -185,7 +185,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.accentGold.withOpacity(0.2),
+                    color: AppColors.accentGold.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.menu_book_rounded, color: AppColors.accentGold, size: 24),
@@ -215,7 +215,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                       const SizedBox(height: 2),
                       Text(
                         'Tüm anılarınızı şık bir dijital kitaba veya PDF çıktısına dönüştürün.',
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11),
                       ),
                     ],
                   ),
@@ -325,7 +325,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.55),
+                                  color: Colors.black.withValues(alpha: 0.55),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -344,7 +344,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.7),
+                                  color: Colors.black.withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -372,7 +372,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.65),
+                                  color: Colors.black.withValues(alpha: 0.65),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -477,7 +477,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -519,7 +519,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: item.isAnniversary ? AppColors.primarySoft : AppColors.secondarySoft.withOpacity(isDark ? 0.2 : 0.8),
+                      color: item.isAnniversary ? AppColors.primarySoft : AppColors.secondarySoft.withValues(alpha: isDark ? 0.2 : 0.8),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Center(

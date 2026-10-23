@@ -125,7 +125,7 @@ class TogetherScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.25),
+                      color: AppColors.primary.withValues(alpha: 0.25),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -142,7 +142,7 @@ class TogetherScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.help_outline_rounded, color: Colors.white, size: 18),
@@ -161,7 +161,7 @@ class TogetherScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -230,7 +230,7 @@ class TogetherScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.secondarySoft.withOpacity(isDark ? 0.2 : 0.8),
+                              color: AppColors.secondarySoft.withValues(alpha: isDark ? 0.2 : 0.8),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(Icons.psychology_rounded, color: AppColors.secondary, size: 24),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_links.dart';
 
 class PrivacyPolicySheet extends StatelessWidget {
   const PrivacyPolicySheet({super.key});
@@ -44,20 +45,34 @@ class PrivacyPolicySheet extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               child: Text(
-                'ÇiftApp olarak kişisel verilerinizin ve ilişkinize ait özel anıların güvenliğini en üst düzeyde tutuyoruz.\n\n'
+                'Yanyana olarak kişisel verilerinizin ve ilişkinize ait özel anıların güvenliğini en üst düzeyde tutuyoruz.\n\n'
                 '1. Veri Sorumlusu ve Kapsam:\n'
-                '6698 sayılı KVKK ve GDPR kapsamında, mesajlarınız, yüklediğiniz anı fotoğrafları ve planlarınız yalnızca eşleşmiş olduğunuz partneriniz ile sizin aranızda paylaşılır.\n\n'
+                '6698 sayılı KVKK ve GDPR kapsamında, yüklediğiniz anı fotoğrafları ve planlarınız yalnızca eşleşmiş olduğunuz partneriniz ile sizin aranızda paylaşılır.\n\n'
                 '2. Şifreleme ve Güvenlik:\n'
-                'Tüm veriler aktarım sırasında ve sunucularımızda endüstri standardı TLS ve şifreleme yöntemleriyle saklanmaktadır.\n\n'
+                'Verileriniz cihazınızda saklanır; senkronizasyon etkinleştiğinde aktarım sırasında TLS ile korunur ve şifreli bulut altyapısında tutulur.\n\n'
                 '3. Veri Silme ve Unutulma Hakkı:\n'
-                'Uygulama ayarlarından "Hesabı ve Verileri Sil" seçeneğini kullanarak dilediğiniz zaman tüm sohbet, görsel ve hesap kayıtlarınızı kalıcı olarak silebilirsiniz.\n\n'
+                'Uygulama ayarlarından "Hesabı ve Verileri Sil" seçeneğini kullanarak dilediğiniz zaman tüm görsel ve hesap kayıtlarınızı kalıcı olarak silebilirsiniz.\n\n'
                 '4. Reklam ve Üçüncü Taraflar:\n'
                 'Verileriniz asla reklam verenlere satılmaz veya hedefli reklam amacıyla üçüncü taraflarla paylaşılmaz.',
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 13),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () => AppLinks.open(context, AppLinks.privacyPolicy),
+                child: const Text('Tam Gizlilik Politikası'),
+              ),
+              TextButton(
+                onPressed: () => AppLinks.open(context, AppLinks.termsOfUse),
+                child: const Text('Kullanım Şartları'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Anladım'),

@@ -42,7 +42,7 @@ class WhoMoreQuizScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -53,7 +53,7 @@ class WhoMoreQuizScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.people_alt_rounded, color: Colors.white, size: 28),
@@ -75,7 +75,7 @@ class WhoMoreQuizScreen extends StatelessWidget {
                         Text(
                           '$totalVoted sorudan $agreedCount tanesinde aynı cevabı verdiniz! 🎉',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12.5,
                           ),
                         ),
@@ -119,8 +119,8 @@ class WhoMoreQuizScreen extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 color: isAgreed
-                                    ? AppColors.accentTeal.withOpacity(0.15)
-                                    : AppColors.accentGold.withOpacity(0.15),
+                                    ? AppColors.accentTeal.withValues(alpha: 0.15)
+                                    : AppColors.accentGold.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
@@ -240,7 +240,7 @@ class WhoMoreQuizScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.primaryDark.withOpacity(0.4) : AppColors.primarySoft)
+              ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.4) : AppColors.primarySoft)
               : (isDark ? AppColors.darkSurface : AppColors.background),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(

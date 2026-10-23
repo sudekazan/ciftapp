@@ -256,9 +256,33 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
     );
   }
 
+  Widget _buildEmptyState(ThemeData theme, IconData icon, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 52, color: AppColors.textSecondary),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCalendarTab(ThemeData theme, bool isDark) {
     final plansProvider = Provider.of<PlansProvider>(context);
     final events = plansProvider.events;
+
+    if (events.isEmpty) {
+      return _buildEmptyState(theme, Icons.event_note_rounded, 'Henüz bir etkinlik eklemediniz.\nSağ alttaki + ile başlayın.');
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -342,6 +366,10 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
     final plansProvider = Provider.of<PlansProvider>(context);
     final tasks = plansProvider.tasks;
 
+    if (tasks.isEmpty) {
+      return _buildEmptyState(theme, Icons.checklist_rounded, 'Henüz bir görev eklemediniz.\nSağ alttaki + ile başlayın.');
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       itemCount: tasks.length,
@@ -385,6 +413,10 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
   Widget _buildShoppingTab(ThemeData theme, bool isDark) {
     final plansProvider = Provider.of<PlansProvider>(context);
     final items = plansProvider.shoppingList;
+
+    if (items.isEmpty) {
+      return _buildEmptyState(theme, Icons.shopping_bag_outlined, 'Alışveriş listeniz boş.\nSağ alttaki + ile ürün ekleyin.');
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),

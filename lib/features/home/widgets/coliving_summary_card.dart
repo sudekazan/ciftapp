@@ -149,7 +149,7 @@ class ColivingSummaryCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.secondarySoft.withOpacity(isDark ? 0.2 : 0.8),
+                          color: AppColors.secondarySoft.withValues(alpha: isDark ? 0.2 : 0.8),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.shopping_basket_rounded, color: AppColors.secondary, size: 20),
@@ -167,7 +167,7 @@ class ColivingSummaryCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.accentTeal.withOpacity(0.12),
+                      color: AppColors.accentTeal.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(

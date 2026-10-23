@@ -3,13 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
+
 import 'core/localization/app_localizations.dart';
 import 'core/providers/app_state_provider.dart';
-import 'core/providers/chat_provider.dart';
 import 'core/providers/dreams_provider.dart';
 import 'core/providers/memories_provider.dart';
 import 'core/providers/plans_provider.dart';
 import 'core/providers/together_provider.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/purchase_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/initial_setup_screen.dart';
 import 'features/main_navigation_screen.dart';
@@ -17,19 +22,42 @@ import 'features/main_navigation_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
-  );
+  // The layout is designed for portrait only.
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Initialize Firebase SDK
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('Firebase initialized successfully.');
+
+    // Ensure anonymous auth for Cloud Storage & Firestore access
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+        debugPrint('Firebase Auth: Signed in anonymously (${FirebaseAuth.instance.currentUser?.uid})');
+      }
+    } catch (authError) {
+      debugPrint('Firebase Auth anonymous sign-in error: $authError');
+    }
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
+
+  // Initialize Notification Service (FCM & Alerts)
+  await NotificationService.instance.init();
+
+  // Initialize RevenueCat SDK (non-blocking if not configured)
+  await PurchaseService.instance.init();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => DreamsProvider()),
         ChangeNotifierProvider(create: (_) => PlansProvider()),
         ChangeNotifierProvider(create: (_) => TogetherProvider()),
@@ -48,7 +76,7 @@ class CiftApp extends StatelessWidget {
     final appState = Provider.of<AppStateProvider>(context);
 
     return MaterialApp(
-      title: 'ÇiftApp',
+      title: 'Yanyana',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -64,6 +92,15 @@ class CiftApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        // Status bar icons follow the resolved theme (light icons on dark theme).
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+              .copyWith(statusBarColor: Colors.transparent),
+          child: child!,
+        );
+      },
       home: appState.isLoading
           ? const Scaffold(
               body: Center(child: CircularProgressIndicator()),

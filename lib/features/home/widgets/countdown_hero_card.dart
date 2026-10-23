@@ -34,7 +34,7 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
 
   void _showEditReunionDialog(BuildContext context, UserModel user) {
     DateTime selectedDate = user.nextReunionDate ?? DateTime.now().add(const Duration(days: 14));
-    final locController = TextEditingController(text: user.reunionLocation ?? 'İstanbul & Londra Buluşması ✈️');
+    final locController = TextEditingController(text: user.reunionLocation ?? '');
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
     showDialog(
@@ -129,7 +129,54 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final targetDate = user.nextReunionDate ?? DateTime.now().add(const Duration(days: 14));
+    final nextReunion = user.nextReunionDate;
+    if (nextReunion == null) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCardBg : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? AppColors.darkDivider : AppColors.divider,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primarySoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.flight_land_rounded, color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.text('next_reunion'),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Henüz bir buluşma tarihi belirlemediniz.',
+                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => _showEditReunionDialog(context, user),
+              child: const Text('Tarih Belirle', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final targetDate = nextReunion;
     final diff = targetDate.difference(DateTime.now());
 
     final days = diff.inDays;
@@ -263,7 +310,7 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
       child: Text(
         ':',
         style: TextStyle(
-          color: AppColors.primary.withOpacity(0.6),
+          color: AppColors.primary.withValues(alpha: 0.6),
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),

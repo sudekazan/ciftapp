@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_links.dart';
 import '../../../core/models/relationship_mode.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../main_navigation_screen.dart';
@@ -25,6 +26,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   // Selected path: 'have_code' or 'create_new'
   String _pathChoice = 'create_new';
   bool _isLoading = false;
+  bool _consentAccepted = false;
 
   @override
   void dispose() {
@@ -81,6 +83,16 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   }
 
   Future<void> _finishSetup() async {
+    if (!_consentAccepted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lütfen 17 yaşından büyük olduğunuzu ve şartları kabul ettiğinizi onaylayın.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     final name = _nameController.text.trim().isEmpty ? 'Ben' : _nameController.text.trim();
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
@@ -90,8 +102,16 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     String? partnerName;
 
     if (_pathChoice == 'have_code') {
-      partnerCode = _partnerCodeController.text.trim();
-      partnerName = 'Can ❤️';
+      final error = appState.validatePartnerCode(_partnerCodeController.text);
+      if (error != null) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+        );
+        return;
+      }
+      partnerCode = _partnerCodeController.text.trim().toUpperCase();
+      partnerName = null; // Real partner name comes from the sync backend.
     }
 
     await appState.completeInitialSetup(
@@ -112,8 +132,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
 
   void _shareInviteCode(String code) {
     Share.share(
-      'ÇiftApp\'te sana özel alanımızı oluşturdum! Uygulamayı açtığında davet kodumu gir: $code ❤️',
-      subject: 'ÇiftApp Davet Kodu',
+      'Yanyana\'da sana özel alanımızı oluşturdum! Uygulamayı açtığında davet kodumu gir: $code ❤️',
+      subject: 'Yanyana Davet Kodu',
     );
   }
 
@@ -159,7 +179,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                 children: const [
                   Icon(Icons.favorite_rounded, color: AppColors.primary, size: 18),
                   SizedBox(width: 6),
-                  Text('ÇiftApp', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16)),
+                  Text('Yanyana', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16)),
                 ],
               ),
               InkWell(
@@ -172,8 +192,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                    color: AppColors.primary.withOpacity(0.08),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    color: AppColors.primary.withValues(alpha: 0.08),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -318,7 +338,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'ÇiftApp’e Hoş Geldin! ✨',
+            'Yanyana’ya Hoş Geldin! ✨',
             style: theme.textTheme.displayLarge?.copyWith(fontSize: 26, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
@@ -335,13 +355,13 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 width: 1.5,
               ),
               boxShadow: [
                 if (!isDark)
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.06),
+                    color: AppColors.primary.withValues(alpha: 0.06),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -479,12 +499,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                 color: isDark ? AppColors.darkSurface : Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.5),
+                  color: AppColors.primary.withValues(alpha: 0.5),
                   width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.08),
+                    color: AppColors.primary.withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -590,7 +610,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -623,7 +643,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                           Text(
                             durationText,
                             style: TextStyle(
-                              color: isDark ? Colors.white70 : AppColors.primaryDark.withOpacity(0.8),
+                              color: isDark ? Colors.white70 : AppColors.primaryDark.withValues(alpha: 0.8),
                               fontSize: 12.5,
                             ),
                           ),
@@ -772,7 +792,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.primaryDark.withOpacity(0.25) : Colors.white)
+              ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.25) : Colors.white)
               : (isDark ? AppColors.darkCardBg : AppColors.background),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
@@ -782,7 +802,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.12),
+                color: AppColors.primary.withValues(alpha: 0.12),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -822,7 +842,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.black.withOpacity(0.05),
+                          color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -958,14 +978,9 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                           controller: _partnerCodeController,
                           textCapitalization: TextCapitalization.characters,
                           decoration: const InputDecoration(
-                            hintText: 'Örn: CFT-7492',
+                            hintText: 'Örn: CFT-K7M2QX',
                             prefixIcon: Icon(Icons.vpn_key_rounded, color: AppColors.primary),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'İpucu: Test için "CFT-DEMO" yazarak Can ile simüle partner eşleşmesi yapabilirsiniz.',
-                          style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -1024,7 +1039,80 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                   )
                 : null,
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
+
+          // KVKK / GDPR & Age 17+ consent
+          InkWell(
+            onTap: () => setState(() => _consentAccepted = !_consentAccepted),
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Checkbox(
+                  value: _consentAccepted,
+                  activeColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  onChanged: (val) => setState(() => _consentAccepted = val ?? false),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          '17 yaşından büyüğüm. ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => AppLinks.open(context, AppLinks.privacyPolicy),
+                          child: const Text(
+                            'Gizlilik Politikası',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          ' ve ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => AppLinks.open(context, AppLinks.termsOfUse),
+                          child: const Text(
+                            'Kullanım Şartları',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '’nı okudum, onaylıyorum.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           ElevatedButton(
             onPressed: _isLoading ? null : _finishSetup,
@@ -1034,7 +1122,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     width: 20,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : const Text('ÇiftApp’i Başlat ❤️'),
+                : const Text('Yanyana’yı Başlat ❤️'),
           ),
           const SizedBox(height: 12),
 
@@ -1074,7 +1162,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.primaryDark.withOpacity(0.2) : Colors.white)
+              ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.2) : Colors.white)
               : (isDark ? AppColors.darkCardBg : AppColors.background),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -1084,7 +1172,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           boxShadow: [
             if (isSelected && !isDark)
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withValues(alpha: 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),

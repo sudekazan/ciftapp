@@ -57,8 +57,8 @@ class DailyQuestionPreviewCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: question.isRevealed
-                      ? AppColors.accentTeal.withOpacity(0.12)
-                      : AppColors.accentGold.withOpacity(0.12),
+                      ? AppColors.accentTeal.withValues(alpha: 0.12)
+                      : AppColors.accentGold.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

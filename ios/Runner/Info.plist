@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>ÇiftApp</string>
+	<string>Yanyana</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>ciftapp</string>
+	<string>yanyana</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -31,8 +31,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -46,8 +44,8 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>ÇiftApp, anılarınıza ve profilinize fotoğraf çekip ekleyebilmeniz için kamera erişimine ihtiyaç duyar.</string>
+	<string>Yanyana, anılarınıza ve profilinize fotoğraf çekip ekleyebilmeniz için kamera erişimine ihtiyaç duyar.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ÇiftApp, sevgilinizle paylaştığınız anıları ve fotoğrafları seçebilmeniz için fotoğraf galerisi erişimine ihtiyaç duyar.</string>
+	<string>Yanyana, partnerinizle paylaştığınız anıları ve fotoğrafları seçebilmeniz için fotoğraf galerisi erişimine ihtiyaç duyar.</string>
 </dict>
 </plist>

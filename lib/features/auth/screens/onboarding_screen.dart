@@ -25,7 +25,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final slides = [
       {
         'title': 'Sadece İkinize Özel Ortak Bir Evren',
-        'desc': 'Sohbet, ortak takvim, anı defteri ve ilişki oyunları tek bir samimi alanda.',
+        'desc': 'Ortak takvim, anı defteri ve ilişki oyunları tek bir samimi alanda.',
         'icon': Icons.favorite_rounded,
         'gradient': AppColors.heartGradient,
       },
@@ -85,7 +85,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               gradient: slide['gradient'] as LinearGradient,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
+                                  color: AppColors.primary.withValues(alpha: 0.3),
                                   blurRadius: 30,
                                   offset: const Offset(0, 10),
                                 ),
@@ -192,7 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     );
                   }
                 },
-                child: Text(_currentPage == slides.length ? 'ÇiftApp’e Başla' : 'Devam Et'),
+                child: Text(_currentPage == slides.length ? 'Yanyana’ya Başla' : 'Devam Et'),
               ),
               const SizedBox(height: 8),
             ],
@@ -218,7 +218,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.primaryDark.withOpacity(0.3) : AppColors.primarySoft)
+              ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.3) : AppColors.primarySoft)
               : (isDark ? AppColors.darkCardBg : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(

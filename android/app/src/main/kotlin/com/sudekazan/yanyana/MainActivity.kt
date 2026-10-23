@@ -1,4 +1,4 @@
-package com.ciftapp.ciftapp
+package com.sudekazan.yanyana
 
 import io.flutter.embedding.android.FlutterActivity
 

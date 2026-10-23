@@ -1,90 +1,107 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/memory_item.dart';
+import '../models/model_json.dart';
+import '../services/local_store.dart';
+import '../services/photo_storage.dart';
 
 class MemoriesProvider extends ChangeNotifier {
+  static const _memoriesKey = 'memories';
+  static const _countdownsKey = 'countdowns';
+
   final List<MemoryItem> _memories = [];
   final List<CountdownEvent> _countdowns = [];
+  bool _isLoaded = false;
 
   List<MemoryItem> get memories => List.unmodifiable(_memories);
   List<CountdownEvent> get countdowns => List.unmodifiable(_countdowns);
+  bool get isLoaded => _isLoaded;
 
   MemoriesProvider() {
-    _loadSampleMemories();
+    _load();
   }
 
-  void _loadSampleMemories() {
-    final now = DateTime.now();
+  Future<void> _load() async {
+    final loaded = await LocalStore.loadList(_memoriesKey, MemoryItemJson.fromJson);
+    final memories = <MemoryItem>[];
+    for (final m in loaded) {
+      final resolved = <String>[];
+      for (final p in m.imageUrls) {
+        resolved.add(await PhotoStorage.resolve(p));
+      }
+      memories.add(m.copyWith(imageUrls: resolved));
+    }
+    final countdowns = await LocalStore.loadList(_countdownsKey, CountdownEventJson.fromJson);
+    _memories
+      ..clear()
+      ..addAll(memories);
+    _countdowns
+      ..clear()
+      ..addAll(countdowns);
+    _isLoaded = true;
+    notifyListeners();
 
-    _memories.addAll([
-      MemoryItem(
-        id: const Uuid().v4(),
-        title: 'İlk Karşılaşmamız Kadıköy’de ✨',
-        note: 'Yağmurlu bir sonbahar günüydü, kahvecide saatlerce konuşmuştuk. Zamanın nasıl geçtiğini hiç anlamamıştık.',
-        date: now.subtract(const Duration(days: 342)),
-        location: 'Kadıköy, Moda',
-        mood: 'Romantik ❤️',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80',
-        ],
-        tags: ['İlk Gün', 'İstanbul', 'Kahve'],
-      ),
-      MemoryItem(
-        id: const Uuid().v4(),
-        title: 'Boğaz Turu ve Gün Batımı 🌅',
-        note: 'Rüzgar saçlarını uçururken bana sarıldığın o an dünyadaki en huzurlu andı.',
-        date: now.subtract(const Duration(days: 210)),
-        location: 'Ortaköy, İstanbul',
-        mood: 'Huzurlu 🕊️',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
-        ],
-        tags: ['Gün Batımı', 'Boğaz', 'Aşk'],
-      ),
-      MemoryItem(
-        id: const Uuid().v4(),
-        title: 'Havaalanında Veda Ama Yeniden Başlangıç ✈️',
-        note: 'Gözlerimiz dolsa da mesafeler kalpleri daha da yakınlaştırır demiştik. Bir sonraki kavuşma için gün sayıyoruz.',
-        date: now.subtract(const Duration(days: 75)),
-        location: 'İstanbul Havalimanı',
-        mood: 'Duygusal 🥺',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
-        ],
-        tags: ['Uzak Mesafe', 'Sözümüz', 'Kavuşma'],
-      ),
-    ]);
+    // Asynchronously back up any local photos to Firebase Cloud Storage
+    _syncLocalPhotosToCloud();
+  }
 
-    _countdowns.addAll([
-      CountdownEvent(
-        id: const Uuid().v4(),
-        titleTr: 'Büyük Buluşma Günü ✈️',
-        titleEn: 'Next Reunion Date ✈️',
-        targetDate: now.add(const Duration(days: 14, hours: 8, minutes: 30)),
-        icon: 'plane',
-        isAnniversary: false,
-      ),
-      CountdownEvent(
-        id: const Uuid().v4(),
-        titleTr: '1. Yıl Dönümümüz 💍',
-        titleEn: '1st Anniversary 💍',
-        targetDate: now.add(const Duration(days: 23)),
-        icon: 'heart',
-        isAnniversary: true,
-      ),
-      CountdownEvent(
-        id: const Uuid().v4(),
-        titleTr: 'Yılbaşı Birlikte Tatili ❄️',
-        titleEn: 'New Year Holiday ❄️',
-        targetDate: now.add(const Duration(days: 75)),
-        icon: 'cake',
-        isAnniversary: false,
-      ),
-    ]);
+  /// Silently uploads local photo files to Firebase Cloud Storage and updates paths to URLs
+  Future<void> _syncLocalPhotosToCloud() async {
+    if (Firebase.apps.isEmpty) return;
+    try {
+      bool changed = false;
+      for (int i = 0; i < _memories.length; i++) {
+        final memory = _memories[i];
+        final updatedUrls = <String>[];
+        bool memoryChanged = false;
+
+        for (final url in memory.imageUrls) {
+          if (!url.startsWith('http')) {
+            final file = File(url);
+            if (await file.exists()) {
+              final cloudUrl = await PhotoStorage.uploadToCloud(file);
+              if (cloudUrl != null) {
+                updatedUrls.add(cloudUrl);
+                memoryChanged = true;
+                continue;
+              }
+            }
+          }
+          updatedUrls.add(url);
+        }
+
+        if (memoryChanged) {
+          _memories[i] = memory.copyWith(imageUrls: updatedUrls);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        notifyListeners();
+        await _saveMemories();
+        debugPrint('MemoriesProvider: Local photos synced to cloud successfully.');
+      }
+    } catch (e) {
+      debugPrint('MemoriesProvider: Cloud photo sync error: $e');
+    }
+  }
+
+  Future<void> _saveMemories() =>
+      LocalStore.saveList(_memoriesKey, _memories, (m) => m.toJson());
+
+  Future<void> _saveCountdowns() =>
+      LocalStore.saveList(_countdownsKey, _countdowns, (c) => c.toJson());
+
+  /// Clears all in-memory and persisted data (account deletion).
+  Future<void> clearAll() async {
+    await PhotoStorage.delete(_memories.expand((m) => m.imageUrls));
+    _memories.clear();
+    _countdowns.clear();
+    await _saveMemories();
+    await _saveCountdowns();
+    notifyListeners();
   }
 
   void addMemory({
@@ -110,11 +127,17 @@ class MemoriesProvider extends ChangeNotifier {
       ),
     );
     notifyListeners();
+    _saveMemories();
   }
 
   void deleteMemory(String id) {
+    final index = _memories.indexWhere((m) => m.id == id);
+    if (index != -1) {
+      PhotoStorage.delete(_memories[index].imageUrls);
+    }
     _memories.removeWhere((m) => m.id == id);
     notifyListeners();
+    _saveMemories();
   }
 
   void toggleFavorite(String id) {
@@ -123,6 +146,7 @@ class MemoriesProvider extends ChangeNotifier {
       final item = _memories[index];
       _memories[index] = item.copyWith(isFavorite: !item.isFavorite);
       notifyListeners();
+      _saveMemories();
     }
   }
 
@@ -142,10 +166,12 @@ class MemoriesProvider extends ChangeNotifier {
       isAnniversary: isAnniversary,
     ));
     notifyListeners();
+    _saveCountdowns();
   }
 
   void deleteCountdown(String id) {
     _countdowns.removeWhere((c) => c.id == id);
     notifyListeners();
+    _saveCountdowns();
   }
 }

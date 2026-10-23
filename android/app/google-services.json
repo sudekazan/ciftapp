@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "39799298832",
+    "project_id": "yanyana-8d7ce",
+    "storage_bucket": "yanyana-8d7ce.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:39799298832:android:34f9f7f7b8f5e25010a395",
+        "android_client_info": {
+          "package_name": "com.sudekazan.yanyana"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtPRp1CuZUnCoV38Oj9_Vo14rC3PRgPCw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

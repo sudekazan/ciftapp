@@ -15,12 +15,11 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'tr': {
-      'app_name': 'ÇiftApp',
+      'app_name': 'Yanyana',
       'app_tagline': 'Birlikte, Her Mesafede',
 
       // Navigation
       'nav_home': 'Ana Sayfa',
-      'nav_chat': 'Sohbet',
       'nav_dreams': 'Hayallerimiz',
       'nav_plans': 'Planlar',
       'nav_together': 'Birlikte',
@@ -66,16 +65,6 @@ class AppLocalizations {
       'your_answer': 'Senin Yanıtın',
       'partner_answer': 'Partnerinin Yanıtı',
       'write_your_answer': 'Düşüncelerini buraya yaz...',
-
-      // Chat
-      'chat_title': 'Özel Alanımız',
-      'type_message': 'Mesajınızı yazın...',
-      'voice_note': 'Sesli Not',
-      'send_surprise': 'Sürpriz Mesaj Zamanla',
-      'surprise_message_title': 'Sürpriz Mesaj',
-      'surprise_message_desc': 'Partnerin bu mesajı belirlediğin tarihte açabilecek.',
-      'scheduled_for': 'Açılma Zamanı',
-      'surprise_locked': 'Bu sürpriz kilitli! 🎁',
 
       // Plans
       'plans_title': 'Ortak Planlar',
@@ -123,7 +112,7 @@ class AppLocalizations {
       'privacy_policy': 'Gizlilik Politikası ve KVKK',
       'terms_of_service': 'Kullanım Şartları',
       'delete_account': 'Hesabı ve Verileri Sil',
-      'delete_account_warning': 'Tüm mesajlarınız, anılarınız ve çift alanınız kalıcı olarak silinir. Bu işlem geri alınamaz.',
+      'delete_account_warning': 'Tüm anılarınız ve çift alanınız kalıcı olarak silinir. Bu işlem geri alınamaz.',
       'cancel': 'Vazgeç',
       'confirm': 'Onayla',
       'save': 'Kaydet',
@@ -170,15 +159,14 @@ class AppLocalizations {
       'profile_start_date': 'Birliktelik Başlangıç Tarihi',
       'profile_dark_mode': 'Karanlık Mod',
       'profile_edit_name': 'Adını Düzenle',
-      'profile_premium_active': 'ÇiftApp Premium Aktif ✨',
-      'profile_upgrade_premium': 'ÇiftApp Premium’a Geçin',
+      'profile_premium_active': 'Yanyana Premium Aktif ✨',
+      'profile_upgrade_premium': 'Yanyana Premium’a Geçin',
       'profile_days_together_suffix': 'gündür birlikte',
 
       // Premium & Paywall
-      'premium_title': 'ÇiftApp Premium',
+      'premium_title': 'Yanyana Premium',
       'premium_subtitle': 'İlişkinize özel tüm ayrıcalıkları sınırsız keşfedin',
       'feature_unlimited_photos': 'Sınırsız fotoğraf ve video anı saklama',
-      'feature_voice_surprise': 'Sesli notlar ve zamanlanmış sürpriz mesajlar',
       'feature_all_games': 'Tüm ilişki oyunları ve derinleşme soru paketleri',
       'feature_advanced_calendar': 'Gelişmiş takvim ve ortak bütçe takibi',
       'feature_memory_book_export': 'Yıllık anı kitabı PDF çıktısı',
@@ -188,14 +176,17 @@ class AppLocalizations {
       'start_trial_btn': '7 Gün Ücretsiz Dene ve Başla',
       'trial_info': '7 gün boyunca ücretsiz. Deneme süresi bitmeden önce iptal ederseniz ücret alınmaz. Dilediğiniz an tek tıkla iptal edebilirsiniz.',
       'restore_purchases': 'Satın Alımları Geri Yükle',
+      'terms_of_use': 'Kullanım Şartları',
+      'auto_renew_info': 'Abonelik, dönem bitiminden en az 24 saat önce iptal edilmezse otomatik yenilenir. App Store / Google Play hesap ayarlarından yönetebilirsiniz.',
+      'premium_activated': 'Yanyana Premium aktif edildi! ❤️',
+      'purchases_restored': 'Satın alımlarınız kontrol edildi.',
     },
     'en': {
-      'app_name': 'ÇiftApp',
+      'app_name': 'Yanyana',
       'app_tagline': 'Together, Across Every Distance',
 
       // Navigation
       'nav_home': 'Home',
-      'nav_chat': 'Chat',
       'nav_dreams': 'Bucket List',
       'nav_plans': 'Plans',
       'nav_together': 'Together',
@@ -241,16 +232,6 @@ class AppLocalizations {
       'your_answer': 'Your Answer',
       'partner_answer': "Partner's Answer",
       'write_your_answer': 'Write your thoughts here...',
-
-      // Chat
-      'chat_title': 'Our Safe Space',
-      'type_message': 'Type a message...',
-      'voice_note': 'Voice Note',
-      'send_surprise': 'Schedule Surprise Message',
-      'surprise_message_title': 'Surprise Message',
-      'surprise_message_desc': 'Your partner can only open this message on the chosen date.',
-      'scheduled_for': 'Reveal Date',
-      'surprise_locked': 'This surprise is locked! 🎁',
 
       // Plans
       'plans_title': 'Shared Plans',
@@ -298,7 +279,7 @@ class AppLocalizations {
       'privacy_policy': 'Privacy Policy & GDPR',
       'terms_of_service': 'Terms of Service',
       'delete_account': 'Delete Account & Data',
-      'delete_account_warning': 'All messages, memories, and couple space will be permanently erased. This cannot be undone.',
+      'delete_account_warning': 'All memories and couple space will be permanently erased. This cannot be undone.',
       'cancel': 'Cancel',
       'confirm': 'Confirm',
       'save': 'Save',
@@ -345,15 +326,14 @@ class AppLocalizations {
       'profile_start_date': 'Relationship Start Date',
       'profile_dark_mode': 'Dark Mode',
       'profile_edit_name': 'Edit Name',
-      'profile_premium_active': 'ÇiftApp Premium Active ✨',
-      'profile_upgrade_premium': 'Upgrade to ÇiftApp Premium',
+      'profile_premium_active': 'Yanyana Premium Active ✨',
+      'profile_upgrade_premium': 'Upgrade to Yanyana Premium',
       'profile_days_together_suffix': 'days together',
 
       // Premium & Paywall
-      'premium_title': 'ÇiftApp Premium',
+      'premium_title': 'Yanyana Premium',
       'premium_subtitle': 'Unlock the ultimate shared experience for you and your partner',
       'feature_unlimited_photos': 'Unlimited photos and video memories',
-      'feature_voice_surprise': 'Voice notes & scheduled surprise messages',
       'feature_all_games': 'All couple games & deep relationship questions',
       'feature_advanced_calendar': 'Advanced calendar & shared budget tracking',
       'feature_memory_book_export': 'Annual Memory Book printable PDF export',
@@ -363,8 +343,15 @@ class AppLocalizations {
       'start_trial_btn': 'Start 7-Day Free Trial',
       'trial_info': 'Free for 7 days. Cancel anytime before trial ends and you will not be charged.',
       'restore_purchases': 'Restore Purchases',
+      'terms_of_use': 'Terms of Use',
+      'auto_renew_info': 'Subscription renews automatically unless cancelled at least 24 hours before the end of the period. Manage it in your App Store / Google Play account settings.',
+      'premium_activated': 'Yanyana Premium is now active! ❤️',
+      'purchases_restored': 'Your purchases have been checked.',
     },
   };
+
+  static Set<String> get supportedKeys => _localizedValues['tr']!.keys.toSet();
+  static Set<String> keysFor(String lang) => _localizedValues[lang]?.keys.toSet() ?? {};
 
   String text(String key) {
     final lang = locale.languageCode;

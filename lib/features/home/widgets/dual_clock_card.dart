@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/providers/app_state_provider.dart';
 
 class DualClockCard extends StatefulWidget {
   const DualClockCard({super.key});
@@ -29,15 +31,67 @@ class _DualClockCardState extends State<DualClockCard> {
     super.dispose();
   }
 
+  static String _formatOffset(int minutes) {
+    final sign = minutes < 0 ? '-' : '+';
+    final abs = minutes.abs();
+    final h = abs ~/ 60;
+    final m = abs % 60;
+    return 'UTC$sign$h${m == 0 ? '' : ':${m.toString().padLeft(2, '0')}'}';
+  }
+
+  void _pickPartnerOffset(BuildContext context, AppStateProvider appState) {
+    // UTC-12:00 ... UTC+14:00 in 30-minute steps.
+    final offsets = List.generate(53, (i) => -720 + i * 30);
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Partnerinin saat dilimi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+            SizedBox(
+              height: 320,
+              child: ListView(
+                children: offsets
+                    .map((o) => ListTile(
+                          title: Text(_formatOffset(o)),
+                          trailing: o == appState.partnerUtcOffsetMinutes
+                              ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                              : null,
+                          onTap: () {
+                            appState.setPartnerUtcOffset(o);
+                            Navigator.pop(ctx);
+                          },
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final appState = context.watch<AppStateProvider>();
 
-    // Local time (e.g. Istanbul)
     final myTime = _now;
-    // Partner time (e.g. London, -2 or -3 hours difference)
-    final partnerTime = _now.subtract(const Duration(hours: 2));
+    final myOffset = _now.timeZoneOffset.inMinutes;
+    final partnerOffset = appState.partnerUtcOffsetMinutes;
+    final diffMinutes = partnerOffset - myOffset;
+    final partnerTime = _now.toUtc().add(Duration(minutes: partnerOffset));
+    final partnerLabel = appState.currentUser.partnerName ?? 'Partnerin';
+
+    final diffHours = diffMinutes / 60;
+    final diffText = diffMinutes == 0
+        ? 'Aynı saat'
+        : '${diffMinutes > 0 ? '+' : ''}${diffHours == diffHours.roundToDouble() ? diffHours.toInt() : diffHours} Saat Farkı';
 
     final timeFormatter = DateFormat('HH:mm');
 
@@ -73,11 +127,11 @@ class _DualClockCardState extends State<DualClockCard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.secondarySoft.withOpacity(isDark ? 0.2 : 0.7),
+                  color: AppColors.secondarySoft.withValues(alpha: isDark ? 0.2 : 0.7),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '-2 Saat Farkı',
+                  diffText,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 11,
                     color: AppColors.secondary,
@@ -107,7 +161,7 @@ class _DualClockCardState extends State<DualClockCard> {
                           const Icon(Icons.location_on_rounded, size: 14, color: AppColors.primary),
                           const SizedBox(width: 4),
                           Text(
-                            'İstanbul',
+                            'Sen',
                             style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -134,6 +188,8 @@ class _DualClockCardState extends State<DualClockCard> {
 
               // Partner Location & Time
               Expanded(
+                child: GestureDetector(
+                onTap: () => _pickPartnerOffset(context, appState),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -151,10 +207,14 @@ class _DualClockCardState extends State<DualClockCard> {
                             color: isPartnerDaytime ? AppColors.accentGold : AppColors.secondary,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            'Londra',
-                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Text(
+                              partnerLabel,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
                           ),
+                          Icon(Icons.edit_rounded, size: 12, color: AppColors.textSecondary),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -168,7 +228,9 @@ class _DualClockCardState extends State<DualClockCard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        isPartnerDaytime ? 'Gündüz Vakti ☀️' : 'Uyuyor Olabilir 🌙',
+                        appState.hasPartnerTimeZone
+                            ? (isPartnerDaytime ? 'Gündüz Vakti ☀️' : 'Uyuyor Olabilir 🌙')
+                            : 'Saat dilimini seç',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 11,
                           color: isPartnerDaytime ? AppColors.accentGold : AppColors.secondary,
@@ -177,6 +239,7 @@ class _DualClockCardState extends State<DualClockCard> {
                       ),
                     ],
                   ),
+                ),
                 ),
               ),
             ],

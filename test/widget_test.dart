@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ciftapp/core/providers/app_state_provider.dart';
-import 'package:ciftapp/core/providers/chat_provider.dart';
 import 'package:ciftapp/core/providers/dreams_provider.dart';
 import 'package:ciftapp/core/providers/memories_provider.dart';
 import 'package:ciftapp/core/providers/plans_provider.dart';
@@ -18,7 +17,6 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AppStateProvider()),
-          ChangeNotifierProvider(create: (_) => ChatProvider()),
           ChangeNotifierProvider(create: (_) => DreamsProvider()),
           ChangeNotifierProvider(create: (_) => PlansProvider()),
           ChangeNotifierProvider(create: (_) => TogetherProvider()),
@@ -31,7 +29,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify app name is rendered
-    expect(find.textContaining('ÇiftApp'), findsWidgets);
+    expect(find.textContaining('Yanyana'), findsWidgets);
   });
 
   testWidgets('InitialSetupScreen follows 4-step sequence: Name -> Start Date -> Mode -> Pairing Space', (WidgetTester tester) async {
@@ -41,7 +39,6 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AppStateProvider()),
-          ChangeNotifierProvider(create: (_) => ChatProvider()),
           ChangeNotifierProvider(create: (_) => DreamsProvider()),
           ChangeNotifierProvider(create: (_) => PlansProvider()),
           ChangeNotifierProvider(create: (_) => TogetherProvider()),

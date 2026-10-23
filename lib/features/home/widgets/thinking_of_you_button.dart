@@ -16,6 +16,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
   bool _recentlyTapped = false;
+  DateTime? _lastSeenPulse;
 
   @override
   void initState() {
@@ -117,6 +118,19 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
     final isDark = theme.brightness == Brightness.dark;
     final user = appState.currentUser;
 
+    // Check if a new live partner heartbeat pulse was received
+    if (user.lastThinkingSender != null &&
+        user.lastThinkingSender != user.name &&
+        user.lastThinkingOfYou != null &&
+        (_lastSeenPulse == null || user.lastThinkingOfYou!.isAfter(_lastSeenPulse!))) {
+      _lastSeenPulse = user.lastThinkingOfYou;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showReceivedThinkingOfYouDialog(context, user.lastThinkingSender!);
+        }
+      });
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
@@ -128,7 +142,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -156,15 +170,6 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                   ),
                 ],
               ),
-              // Simulate partner button for easy demonstration
-              IconButton(
-                icon: const Icon(Icons.touch_app_rounded, color: AppColors.secondary, size: 20),
-                tooltip: 'Partner Dokunuşu Simüle Et',
-                onPressed: () {
-                  appState.receivePartnerThinkingOfYou();
-                  _showReceivedThinkingOfYouDialog(context, user.partnerName ?? 'Can ❤️');
-                },
-              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -182,7 +187,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                   gradient: AppColors.heartGradient,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(_recentlyTapped ? 0.6 : 0.35),
+                      color: AppColors.primary.withValues(alpha: _recentlyTapped ? 0.6 : 0.35),
                       blurRadius: _recentlyTapped ? 30 : 20,
                       spreadRadius: _recentlyTapped ? 6 : 2,
                       offset: const Offset(0, 6),

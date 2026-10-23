@@ -5,6 +5,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/relationship_mode.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/providers/dreams_provider.dart';
+import '../../../core/providers/memories_provider.dart';
+import '../../../core/providers/plans_provider.dart';
+import '../../../core/providers/together_provider.dart';
 import '../../auth/screens/pairing_screen.dart';
 import '../../premium/screens/paywall_screen.dart';
 import 'mode_switch_sheet.dart';
@@ -89,6 +93,14 @@ class ProfileSettingsScreen extends StatelessWidget {
             onPressed: () async {
               final nav = Navigator.of(context);
               final messenger = ScaffoldMessenger.of(context);
+              final memories = Provider.of<MemoriesProvider>(context, listen: false);
+              final dreams = Provider.of<DreamsProvider>(context, listen: false);
+              final plans = Provider.of<PlansProvider>(context, listen: false);
+              final together = Provider.of<TogetherProvider>(context, listen: false);
+              await memories.clearAll();
+              await together.clearAll();
+              await dreams.clearAll();
+              await plans.clearAll();
               await appState.deleteAccount();
               if (ctx.mounted) Navigator.pop(ctx);
               nav.popUntil((route) => route.isFirst);
@@ -209,7 +221,7 @@ class ProfileSettingsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -232,7 +244,7 @@ class ProfileSettingsScreen extends StatelessWidget {
                           user.isPremium
                               ? l10n.text('feature_single_payment')
                               : l10n.text('premium_subtitle'),
-                          style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
                         ),
                       ],
                     ),
@@ -358,7 +370,7 @@ class ProfileSettingsScreen extends StatelessWidget {
 
           Center(
             child: Text(
-              'ÇiftApp v1.0.0 (MVP) • Sevgiyle Hazırlandı ❤️',
+              'Yanyana v1.0.0 • Sevgiyle Hazırlandı ❤️',
               style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
             ),
           ),

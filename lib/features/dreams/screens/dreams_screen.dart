@@ -186,7 +186,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                             color: Color(col),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSel ? AppColors.primary : Colors.grey.withOpacity(0.3),
+                              color: isSel ? AppColors.primary : Colors.grey.withValues(alpha: 0.3),
                               width: isSel ? 2.5 : 1,
                             ),
                           ),
@@ -345,7 +345,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.25),
+                color: AppColors.primary.withValues(alpha: 0.25),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -367,7 +367,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -383,7 +383,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                 child: LinearProgressIndicator(
                   value: percentage,
                   minHeight: 10,
-                  backgroundColor: Colors.white.withOpacity(0.25),
+                  backgroundColor: Colors.white.withValues(alpha: 0.25),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
@@ -392,7 +392,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                 percentage == 1.0
                     ? 'İnanılmaz! Bütün hayallerinizi gerçekleştirdiniz! 🎉'
                     : 'Hayallerinizi adım adım birlikte gerçekleştirmeye devam edin... ✨',
-                style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12),
               ),
             ],
           ),
@@ -547,7 +547,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkCardBg : AppColors.primarySoft,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
@@ -610,12 +610,12 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                   color: isDark ? AppColors.darkCardBg : Color(note.colorHex),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: isLocked ? AppColors.secondary : Colors.black.withOpacity(0.06),
+                    color: isLocked ? AppColors.secondary : Colors.black.withValues(alpha: 0.06),
                     width: isLocked ? 2 : 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -649,7 +649,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: AppColors.secondary.withOpacity(0.15),
+                              color: AppColors.secondary.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
@@ -684,7 +684,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Row(
@@ -737,7 +737,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.15),
+                color: AppColors.secondary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.lock_clock_rounded, color: AppColors.secondary, size: 40),

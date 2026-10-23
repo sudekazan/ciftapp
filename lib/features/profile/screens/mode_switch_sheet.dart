@@ -102,7 +102,7 @@ class ModeSwitchSheet extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.primaryDark.withOpacity(0.3) : AppColors.primarySoft)
+              ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.3) : AppColors.primarySoft)
               : (isDark ? AppColors.darkSurface : AppColors.background),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(

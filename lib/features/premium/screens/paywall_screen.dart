@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_links.dart';
+import '../../../core/constants/revenuecat_constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/subscription_plan.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/services/purchase_service.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -15,10 +19,34 @@ class PaywallScreen extends StatefulWidget {
 class _PaywallScreenState extends State<PaywallScreen> {
   int _selectedPlanIndex = 1; // Default to Yearly (Best Value)
   bool _isLoading = false;
+  Package? _monthlyPackage;
+  Package? _yearlyPackage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOfferings();
+  }
+
+  Future<void> _loadOfferings() async {
+    if (!RevenueCatConstants.isConfigured) return;
+    try {
+      final offerings = await PurchaseService.instance.getOfferings();
+      if (offerings != null && offerings.current != null) {
+        if (!mounted) return;
+        setState(() {
+          _monthlyPackage = offerings.current!.monthly;
+          _yearlyPackage = offerings.current!.annual;
+        });
+      }
+    } catch (e) {
+      debugPrint('PaywallScreen: error loading offerings: $e');
+    }
+  }
 
   final List<SubscriptionPlan> _plans = const [
     SubscriptionPlan(
-      id: 'ciftapp_monthly',
+      id: 'yanyana_monthly',
       titleTr: 'Aylık Üyelik',
       titleEn: 'Monthly Plan',
       priceTr: '₺79,99 / Ay',
@@ -29,7 +57,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       isFeatured: false,
     ),
     SubscriptionPlan(
-      id: 'ciftapp_yearly',
+      id: 'yanyana_yearly',
       titleTr: 'Yıllık Üyelik (En Popüler)',
       titleEn: 'Annual Plan (Best Value)',
       priceTr: '₺599,99 / Yıl',
@@ -44,32 +72,120 @@ class _PaywallScreenState extends State<PaywallScreen> {
   ];
 
   Future<void> _handlePurchase() async {
-    final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+
+    if (!RevenueCatConstants.isConfigured) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('RevenueCat henüz yapılandırılmadı. Lütfen revenuecat_constants.dart dosyasına anahtarlarınızı ekleyin.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final selectedPackage = _selectedPlanIndex == 1 ? _yearlyPackage : _monthlyPackage;
+    if (selectedPackage == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Ürün paketleri mağazadan alınamadı. Lütfen internet bağlantınızı kontrol edin.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
 
+    try {
+      final isSuccess = await PurchaseService.instance.purchasePackage(selectedPackage);
+      if (!mounted) return;
+
+      if (isSuccess) {
+        await appState.upgradeToPremium();
+        if (mounted) {
+          Navigator.of(context).pop();
+          messenger.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.stars_rounded, color: Colors.white, size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(l10n.text('premium_activated'))),
+                ],
+              ),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Satın alma hatası: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleRestore() async {
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     final appState = Provider.of<AppStateProvider>(context, listen: false);
-    await appState.upgradeToPremium();
 
-    setState(() => _isLoading = false);
-    nav.pop();
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: const [
-            Icon(Icons.stars_rounded, color: Colors.white, size: 22),
-            SizedBox(width: 8),
-            Text('ÇiftApp Premium aktif edildi! Partneriniz de artık Premium ❤️'),
-          ],
+    if (!RevenueCatConstants.isConfigured) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('RevenueCat henüz yapılandırılmadı.'),
+          backgroundColor: Colors.orange,
         ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final isRestored = await PurchaseService.instance.restorePurchases();
+      if (!mounted) return;
+
+      if (isRestored) {
+        await appState.upgradeToPremium();
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Aboneliğiniz başarıyla geri yüklendi! ❤️'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+        nav.pop();
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Aktif bir abonelik bulunamadı.'),
+            backgroundColor: Colors.grey,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Geri yükleme hatası: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -89,11 +205,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Satın alımlarınız kontrol edildi ve güncellendi.')),
-              );
-            },
+            onPressed: _isLoading ? null : _handleRestore,
             child: Text(
               l10n.text('restore_purchases'),
               style: TextStyle(
@@ -118,7 +230,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.35),
+                    color: AppColors.primary.withValues(alpha: 0.35),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -207,7 +319,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? (isDark ? AppColors.primaryDark.withOpacity(0.3) : AppColors.primarySoft)
+                        ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.3) : AppColors.primarySoft)
                         : (isDark ? AppColors.darkCardBg : Colors.white),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
@@ -267,10 +379,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           ],
                         ),
                       ),
-                      Text(
-                        plan.getPrice(lang),
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                      ),
+                      Builder(builder: (_) {
+                        String displayPrice = plan.getPrice(lang);
+                        if (idx == 0 && _monthlyPackage != null) {
+                          displayPrice = '${_monthlyPackage!.storeProduct.priceString} / ${lang == 'en' ? 'Month' : 'Ay'}';
+                        } else if (idx == 1 && _yearlyPackage != null) {
+                          displayPrice = '${_yearlyPackage!.storeProduct.priceString} / ${lang == 'en' ? 'Year' : 'Yıl'}';
+                        }
+                        return Text(
+                          displayPrice,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -301,6 +421,32 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.text('auto_renew_info'),
+              style: TextStyle(
+                fontSize: 10.5,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  key: const Key('paywall_privacy_link'),
+                  onPressed: () => AppLinks.open(context, AppLinks.privacyPolicy),
+                  child: Text(l10n.text('privacy_policy'), style: const TextStyle(fontSize: 12)),
+                ),
+                const Text('•'),
+                TextButton(
+                  key: const Key('paywall_terms_link'),
+                  onPressed: () => AppLinks.open(context, AppLinks.termsOfUse),
+                  child: Text(l10n.text('terms_of_use'), style: const TextStyle(fontSize: 12)),
+                ),
+              ],
             ),
           ],
         ),
