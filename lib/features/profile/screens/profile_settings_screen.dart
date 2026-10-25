@@ -14,6 +14,7 @@ import '../../auth/screens/pairing_screen.dart';
 import '../../../core/premium/premium_gate.dart';
 import 'mode_switch_sheet.dart';
 import 'privacy_policy_sheet.dart';
+import '../widgets/account_backup_card.dart';
 
 class ProfileSettingsScreen extends StatelessWidget {
   const ProfileSettingsScreen({super.key});
@@ -396,6 +397,9 @@ class ProfileSettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+
+          const AccountBackupCard(),
           const SizedBox(height: 16),
 
           // Section 3: Privacy & Legal

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ciftapp/core/localization/app_localizations.dart';
+import 'package:ciftapp/core/services/account_service.dart';
 import 'package:ciftapp/core/services/couple_sync_service.dart';
 import 'package:ciftapp/core/services/purchase_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,7 +31,8 @@ void main() {
     // Keys built at runtime from enum names.
     used
       ..addAll(PairingError.values.map((e) => 'pair_err_${e.name}'))
-      ..addAll(PurchaseFailureReason.values.map((e) => 'purchase_err_${e.name}'));
+      ..addAll(PurchaseFailureReason.values.map((e) => 'purchase_err_${e.name}'))
+      ..addAll(LinkResult.values.map((e) => 'account_link_${e.name}'));
 
     final missing = used.difference(AppLocalizations.supportedKeys);
     expect(missing, isEmpty, reason: 'Used but not defined: $missing');

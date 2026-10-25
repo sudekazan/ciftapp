@@ -289,5 +289,38 @@ void main() {
       expect(backend.invites.containsKey(inviteCode), isFalse);
       expect(backend.deletedUsers, ['me']);
     });
+  
+    test('signing in on a new phone restores the couple space', () async {
+      // The partner space already has this user (uid "me") as second member.
+      backend.couples['cpl_p']!
+        ..['user2Id'] = 'me'
+        ..['user2Name'] = 'Sude'
+        ..['memberIds'] = ['partner', 'me']
+        ..['mode'] = 'co_living';
+      backend.invites['CFT-MYCODE'] = {'coupleId': 'cpl_old', 'ownerId': 'me', 'ownerName': 'Sude'};
+
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      expect(state.hasCompletedSetup, isFalse);
+
+      expect(await state.restoreFromAccount(), isTrue);
+      await settle();
+
+      expect(state.hasCompletedSetup, isTrue);
+      expect(state.coupleId, 'cpl_p');
+      expect(state.currentUser.name, 'Sude');
+      expect(state.currentUser.inviteCode, 'CFT-MYCODE');
+      expect(state.currentUser.isPaired, isTrue);
+      expect(state.currentUser.partnerName, 'Ayşe');
+      expect(state.currentUser.mode, RelationshipMode.coLiving);
+    });
+
+    test('restoring an account without a couple space reports false', () async {
+      backend.uid = 'nobody';
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      expect(await state.restoreFromAccount(), isFalse);
+      expect(state.hasCompletedSetup, isFalse);
+    });
   });
 }

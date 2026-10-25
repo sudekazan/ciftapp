@@ -81,7 +81,14 @@ cd security-tests && npm install && npm test   # güvenlik kuralları (emülatö
 4. **iOS push:** Apple Developer'da APNs Authentication Key oluşturup Firebase Console >
    Project settings > Cloud Messaging'e yükleyin. (Push yetkisi `ios/Runner/Runner.entitlements`.)
 5. **App Check** (önerilir): Firebase Console'dan Firestore/Storage için App Check'i açın.
-6. **Davet sayfası:** App Store'da yayınlandıktan sonra `docs/davet.html` içindeki
+6. **Hesap yedekleme (Apple / Google ile giriş):**
+   - Firebase Console > Authentication > Sign-in method: **Apple** ve **Google** sağlayıcılarını açın.
+   - Apple Developer'da App ID için *Sign in with Apple* yetkisini açın (yetki `Runner.entitlements` içinde).
+   - Android için debug/release SHA-1 ve SHA-256 parmak izlerini Firebase'e ekleyin.
+   - `flutterfire configure` ile `firebase_options.dart`, `google-services.json` ve
+     `GoogleService-Info.plist` dosyalarını yeniden üretin; iOS'ta `REVERSED_CLIENT_ID` değerini
+     Info.plist'e URL scheme olarak ekleyin. İstemci kimlikleri yoksa Google butonu gizli kalır.
+7. **Davet sayfası:** App Store'da yayınlandıktan sonra `docs/davet.html` içindeki
    `APP_STORE_ID` değerini girin.
 
 ## Lisans

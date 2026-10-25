@@ -464,6 +464,22 @@ class AppLocalizations {
       'privacy_sheet_body': 'Kişisel verilerinizi yalnızca uygulamanın çalışması için işliyoruz.\n\n1. Hangi veriler: Adınız, ilişki bilgileri (başlangıç ve buluşma tarihi, mod, saat dilimi), eklediğiniz anılar, fotoğraflar, notlar, planlar ve cevaplar; bildirim için cihaz kimliği; abonelik durumu; kullanım istatistikleri ve çökme raporları.\n\n2. Kimlerle paylaşılır: İçerikleriniz yalnızca eşleştiğiniz partnerinizle paylaşılır. Güvenlik kuralları başka kullanıcıların erişimini engeller.\n\n3. Hizmet sağlayıcılar ve yurt dışı aktarım: Veriler Google Firebase altyapısında (içerikler AB bölgesinde) şifreli saklanır; abonelikler RevenueCat ve App Store / Google Play üzerinden yönetilir. Bu hizmetler nedeniyle bazı veriler yurt dışında işlenebilir; bu aktarım kurulumda verdiğiniz açık rızaya dayanır.\n\n4. Silme: Profil → Hesabı ve Verileri Sil ile hesabınızı ve verilerinizi silebilirsiniz. Partneriniz varsa ortak anılar onun hesabında kalır.\n\n5. Reklam: Verileriniz satılmaz ve reklam amacıyla paylaşılmaz.\n\nİletişim: destek@yanyana.app',
       'privacy_full': 'Tam Gizlilik Politikası',
       'got_it': 'Anladım',
+
+      // Hesap yedekleme
+      'account_with_apple': 'Apple ile devam et',
+      'account_with_google': 'Google ile devam et',
+      'account_backup_title': 'Hesabını yedekle',
+      'account_backup_done': 'Hesabın yedekli',
+      'account_backup_desc': 'Hesabını Apple veya Google hesabına bağla; telefon değişse ya da uygulamayı silsen de anıların ve eşleşmen kaybolmasın.',
+      'account_backup_linked': '{provider} hesabına bağlı. Yeni bir telefonda aynı hesapla giriş yapabilirsin.',
+      'account_link_linked': 'Hesabın bağlandı! Artık verilerin güvende. ✅',
+      'account_link_alreadyInUse': 'Bu hesap başka bir Yanyana hesabına bağlı. Yeni bir telefonda kurulum ekranındaki "Zaten hesabım var" ile giriş yapabilirsin.',
+      'account_link_cancelled': 'İşlem iptal edildi.',
+      'account_link_failed': 'Hesap bağlanamadı. Lütfen tekrar dene.',
+      'account_have_account': 'Zaten hesabım var — giriş yap',
+      'account_signin_title': 'Hesabına giriş yap',
+      'account_signin_desc': 'Daha önce bağladığın Apple veya Google hesabıyla giriş yap; çift alanın geri yüklenecek.',
+      'account_signin_no_space': 'Bu hesaba bağlı bir çift alanı bulunamadı.',
     },
     'en': {
       'app_name': 'Yanyana',
@@ -915,6 +931,22 @@ class AppLocalizations {
       'privacy_sheet_body': 'We process your personal data only to run the app.\n\n1. What data: your name, relationship details (start and reunion dates, mode, time zone), the memories, photos, notes, plans and answers you add; a device token for notifications; subscription status; usage statistics and crash reports.\n\n2. Who sees it: your content is shared only with the partner you paired with. Security rules block access by anyone else.\n\n3. Service providers and transfers: data is stored encrypted on Google Firebase (content in the EU region); subscriptions are managed by RevenueCat and the App Store / Google Play. Some data may be processed abroad by these services, based on the consent you gave during setup.\n\n4. Deletion: delete your account and data via Profile → Delete Account & Data. If you have a partner, shared memories stay in their account.\n\n5. Ads: your data is never sold or shared for advertising.\n\nContact: destek@yanyana.app',
       'privacy_full': 'Full Privacy Policy',
       'got_it': 'Got It',
+
+      // Hesap yedekleme
+      'account_with_apple': 'Continue with Apple',
+      'account_with_google': 'Continue with Google',
+      'account_backup_title': 'Back up your account',
+      'account_backup_done': 'Your account is backed up',
+      'account_backup_desc': 'Link your account to Apple or Google so your memories and pairing survive a new phone or reinstall.',
+      'account_backup_linked': 'Linked to {provider}. Sign in with it on a new phone to get everything back.',
+      'account_link_linked': 'Account linked! Your data is now safe. ✅',
+      'account_link_alreadyInUse': 'This account is already linked to another Yanyana account. On a new phone, use "I already have an account" during setup.',
+      'account_link_cancelled': 'Cancelled.',
+      'account_link_failed': 'The account could not be linked. Please try again.',
+      'account_have_account': 'I already have an account — sign in',
+      'account_signin_title': 'Sign in to your account',
+      'account_signin_desc': 'Sign in with the Apple or Google account you linked to restore your couple space.',
+      'account_signin_no_space': 'No couple space was found for this account.',
     },
   };
 

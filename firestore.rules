@@ -31,7 +31,8 @@ service cloud.firestore {
     match /invites/{code} {
       // Davet kodunu bilen giriş yapmış kullanıcı belgeyi okuyabilir (tek belge).
       allow get: if signedIn();
-      allow list: if false;
+      // Only "my own invite" queries (restoring an account on a new device).
+      allow list: if signedIn() && resource.data.ownerId == uid();
       allow create: if signedIn()
         && request.resource.data.ownerId == uid()
         && isMember(coupleData(request.resource.data.coupleId));
@@ -69,7 +70,9 @@ service cloud.firestore {
       }
 
       allow get: if isMember(resource.data);
-      allow list: if false;
+      // Only queries restricted to the user's own couples (memberIds
+      // array-contains uid), used to restore an account on a new device.
+      allow list: if isMember(resource.data);
 
       allow create: if signedIn()
         && request.resource.data.user1Id == uid()

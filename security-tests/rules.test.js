@@ -230,6 +230,20 @@ test('a shared couple cannot be deleted; the last member can delete it', async (
   await assertSucceeds(deleteDoc(doc(db('carol'), 'couples', 'cpl_c')));
 });
 
+test('a user can find only their own couples and invites (account restore)', async () => {
+  await pairedCouple();
+  await createSpace('carol', 'cpl_c', 'CFT-CCCCCC');
+  const mine = await assertSucceeds(
+    getDocs(query(collection(db('bob'), 'couples'), where('memberIds', 'array-contains', 'bob'))),
+  );
+  if (mine.docs.map((d) => d.id).join() !== 'cpl_a') throw new Error('unexpected couples');
+  await assertFails(
+    getDocs(query(collection(db('mallory'), 'couples'), where('memberIds', 'array-contains', 'bob'))),
+  );
+  await assertSucceeds(getDocs(query(collection(db('alice'), 'invites'), where('ownerId', '==', 'alice'))));
+  await assertFails(getDocs(query(collection(db('mallory'), 'invites'), where('ownerId', '==', 'alice'))));
+});
+
 test('users can read only their own subscription document', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), 'users', 'alice'), { premiumUntil: new Date(2100, 0, 1) });

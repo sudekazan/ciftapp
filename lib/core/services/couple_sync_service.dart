@@ -84,6 +84,13 @@ abstract class CoupleSyncService {
 
   /// Deletes the Firebase Auth user (account deletion).
   Future<void> deleteCurrentUser();
+
+  /// After signing in on a new device: the couple space this user belongs to
+  /// (a paired one first) with its data, or `null`.
+  Future<({String coupleId, Map<String, dynamic> data})?> findMyCouple();
+
+  /// The invite code this user owns, if any.
+  Future<String?> findMyInviteCode();
 }
 
 /// Real-time couple synchronization backed by Cloud Firestore.
@@ -333,6 +340,37 @@ class FirestoreCoupleSyncService implements CoupleSyncService {
       // e.g. requires-recent-login for linked accounts: at least sign out.
       debugPrint('CoupleSyncService: deleteCurrentUser error: ${e.code}');
       await FirebaseAuth.instance.signOut();
+    }
+  }
+
+  @override
+  Future<({String coupleId, Map<String, dynamic> data})?> findMyCouple() async {
+    final uid = await _ensureUid();
+    if (uid == null) return null;
+    try {
+      // Allowed by the rules only because it is restricted to own memberships.
+      final result = await _db.collection('couples').where('memberIds', arrayContains: uid).get();
+      if (result.docs.isEmpty) return null;
+      final docs = [...result.docs]
+        ..sort((a, b) => ((b.data()['memberIds'] as List?)?.length ?? 0)
+            .compareTo((a.data()['memberIds'] as List?)?.length ?? 0));
+      return (coupleId: docs.first.id, data: docs.first.data());
+    } catch (e) {
+      debugPrint('CoupleSyncService: findMyCouple error: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<String?> findMyInviteCode() async {
+    final uid = await _ensureUid();
+    if (uid == null) return null;
+    try {
+      final result = await _db.collection('invites').where('ownerId', isEqualTo: uid).limit(1).get();
+      return result.docs.isEmpty ? null : result.docs.first.id;
+    } catch (e) {
+      debugPrint('CoupleSyncService: findMyInviteCode error: $e');
+      return null;
     }
   }
 }

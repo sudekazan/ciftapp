@@ -7,7 +7,9 @@ import '../../../core/constants/app_links.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/relationship_mode.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/services/account_service.dart';
 import '../../../core/services/couple_sync_service.dart';
+import '../../profile/widgets/account_backup_card.dart';
 import '../../main_navigation_screen.dart';
 
 class InitialSetupScreen extends StatefulWidget {
@@ -140,6 +142,48 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
     );
+  }
+
+  /// New phone: sign in with the linked Apple/Google account and reconnect to
+  /// the existing couple space instead of starting over.
+  Future<void> _showSignInSheet() async {
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    final provider = await showModalBottomSheet<AccountProvider>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(_t.text('account_signin_title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(_t.text('account_signin_desc'), style: const TextStyle(fontSize: 13)),
+              const SizedBox(height: 16),
+              AccountProviderButtons(
+                providers: AccountService.instance.availableProviders,
+                onPressed: (p) => Navigator.pop(ctx, p),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (provider == null || !mounted) return;
+
+    setState(() => _isLoading = true);
+    final uid = await AccountService.instance.signIn(provider);
+    final restored = uid != null && await appState.restoreFromAccount();
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    if (restored) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+      );
+    } else if (uid != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_t.text('account_signin_no_space'))));
+    }
   }
 
   void _shareInviteCode(String code) {
@@ -443,6 +487,15 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               ],
             ),
           ),
+          if (AccountService.instance.availableProviders.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                onPressed: _isLoading ? null : _showSignInSheet,
+                child: Text(_t.text('account_have_account')),
+              ),
+            ),
+          ],
         ],
       ),
     );

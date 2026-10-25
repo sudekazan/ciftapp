@@ -526,6 +526,36 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     _startCoupleSync();
   }
 
+  /// After signing in with Apple/Google on a new device: reconnects to the
+  /// user's couple space. Returns `false` when the account has none.
+  Future<bool> restoreFromAccount() async {
+    final found = await _sync.findMyCouple();
+    final uid = _sync.currentUid;
+    if (found == null || uid == null) return false;
+    final data = found.data;
+    final name = (data['user1Id'] == uid ? data['user1Name'] : data['user2Name']) as String? ?? '';
+    final inviteCode = await _sync.findMyInviteCode();
+
+    _coupleId = found.coupleId;
+    _inviteEnsured = inviteCode != null;
+    _hasCompletedSetup = true;
+    _currentUser = _currentUser.copyWith(
+      name: name,
+      inviteCode: inviteCode ?? _currentUser.inviteCode,
+    );
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('ciftapp_setup_completed', true);
+    await prefs.setString('ciftapp_user_name', name);
+    await prefs.setString('ciftapp_couple_id', found.coupleId);
+    await prefs.setString('ciftapp_invite_code', _currentUser.inviteCode);
+
+    // Partner, dates, mode and shared premium arrive with the first snapshot.
+    _startCoupleSync();
+    return true;
+  }
+
   /// Pairs via the backend; any failure surfaces as a [PairingException].
   Future<PairingResult> _pairOrThrow(String code, String myName) async {
     try {

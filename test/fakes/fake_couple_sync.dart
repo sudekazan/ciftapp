@@ -154,4 +154,15 @@ class FakeCoupleSyncService implements CoupleSyncService {
   Future<void> deleteCurrentUser() async {
     deletedUsers.add(uid);
   }
+
+  @override
+  Future<({String coupleId, Map<String, dynamic> data})?> findMyCouple() async {
+    final mine = couples.entries.where((e) => (e.value['memberIds'] as List).contains(uid)).toList()
+      ..sort((a, b) => (b.value['memberIds'] as List).length.compareTo((a.value['memberIds'] as List).length));
+    return mine.isEmpty ? null : (coupleId: mine.first.key, data: Map.of(mine.first.value));
+  }
+
+  @override
+  Future<String?> findMyInviteCode() async =>
+      invites.entries.where((e) => e.value['ownerId'] == uid).map((e) => e.key).firstOrNull;
 }
