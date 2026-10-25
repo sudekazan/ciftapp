@@ -27,6 +27,49 @@ class NotificationService {
   /// (Cloud Functions send pushes to the partner's token).
   void Function(String token)? onTokenChanged;
 
+  Future<void> _refreshToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && token != _fcmToken) {
+        _fcmToken = token;
+        onTokenChanged?.call(token);
+      }
+    } catch (e) {
+      // iOS: no APNs token yet (before permission / on simulator).
+      debugPrint('NotificationService: token not available yet: $e');
+    }
+  }
+
+  /// Whether the system permission prompt was already answered.
+  Future<bool> hasAskedPermission() async {
+    if (Firebase.apps.isEmpty) return true;
+    try {
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      return settings.authorizationStatus != AuthorizationStatus.notDetermined;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Shows the system prompt (iOS, Android 13+). Returns whether it was granted.
+  Future<bool> requestPermission() async {
+    if (Firebase.apps.isEmpty) return false;
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint('NotificationService: Permission status: ${settings.authorizationStatus}');
+      await _refreshToken();
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (e) {
+      debugPrint('NotificationService: requestPermission error: $e');
+      return false;
+    }
+  }
+
   Future<void> init() async {
     if (Firebase.apps.isEmpty) {
       debugPrint('NotificationService: Firebase not initialized, skipping.');
@@ -38,19 +81,9 @@ class NotificationService {
 
       final messaging = FirebaseMessaging.instance;
 
-      // Request permissions (iOS and Android 13+)
-      final settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-
-      debugPrint('NotificationService: Permission status: ${settings.authorizationStatus}');
-
-      // Get FCM token
-      _fcmToken = await messaging.getToken();
-      debugPrint('NotificationService: FCM Token obtained: $_fcmToken');
+      // The permission prompt is NOT shown here: it is requested after pairing
+      // with an explanation (see requestPermission), which gets far fewer denials.
+      await _refreshToken();
 
       // Listen for token refreshes
       messaging.onTokenRefresh.listen((newToken) {

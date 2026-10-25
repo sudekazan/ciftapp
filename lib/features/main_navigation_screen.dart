@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/app_colors.dart';
 import '../core/localization/app_localizations.dart';
+import '../core/providers/app_state_provider.dart';
+import '../core/services/notification_service.dart';
 import 'dreams/screens/dreams_screen.dart';
 import 'home/screens/home_screen.dart';
 import 'memories/screens/memories_screen.dart';
@@ -17,11 +21,55 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
+  bool _notificationPromptChecked = false;
+
+  static const _notifPromptKey = 'ciftapp_notif_prompted';
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ask for notifications once the user is paired: by then they understand
+    // why (partner pulses, answers, memories).
+    final isPaired = context.watch<AppStateProvider>().currentUser.isPaired;
+    if (isPaired && !_notificationPromptChecked) {
+      _notificationPromptChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskForNotifications());
+    }
+  }
+
+  Future<void> _maybeAskForNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_notifPromptKey) ?? false) return;
+    if (await NotificationService.instance.hasAskedPermission()) return;
+    await prefs.setBool(_notifPromptKey, true);
+    if (!mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    final allow = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.notifications_active_rounded, color: AppColors.primary, size: 36),
+        title: Text(l10n.text('notif_prompt_title'), textAlign: TextAlign.center),
+        content: Text(l10n.text('notif_prompt_body'), textAlign: TextAlign.center),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.text('notif_prompt_later')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.text('notif_prompt_allow')),
+          ),
+        ],
+      ),
+    );
+    if (allow == true) await NotificationService.instance.requestPermission();
   }
 
   void _onTabTapped(int index) {

@@ -148,6 +148,10 @@ class AppLocalizations {
       'pair_err_alreadyUsed': 'Bu davet kodu zaten başka bir eşleşmede kullanılmış.',
       'pair_err_unavailable': 'Şu an eşleşme yapılamadı. İnternet bağlantını kontrol edip tekrar dene.',
       'pair_success': 'Partnerinle başarıyla eşleştin! ❤️',
+      'notif_prompt_title': 'Partnerinden haberin olsun 💌',
+      'notif_prompt_body': 'Partnerin seni düşündüğünde, günün sorusunu cevapladığında veya yeni bir anı eklediğinde sana haber verelim.',
+      'notif_prompt_allow': 'Bildirimlere İzin Ver',
+      'notif_prompt_later': 'Şimdi Değil',
 
       // Dreams & Love Capsules
       'dreams_tab_bucket': 'Hayal Listesi ✈️',
@@ -336,6 +340,10 @@ class AppLocalizations {
       'pair_err_alreadyUsed': 'This invite code has already been used by another couple.',
       'pair_err_unavailable': "Pairing isn't possible right now. Check your connection and try again.",
       'pair_success': 'You are now paired with your partner! ❤️',
+      'notif_prompt_title': 'Never miss your partner 💌',
+      'notif_prompt_body': 'We will let you know when your partner is thinking of you, answers the daily question or adds a new memory.',
+      'notif_prompt_allow': 'Allow Notifications',
+      'notif_prompt_later': 'Not Now',
 
       // Dreams & Love Capsules
       'dreams_tab_bucket': 'Bucket List ✈️',
