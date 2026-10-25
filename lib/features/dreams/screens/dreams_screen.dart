@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/love_note_item.dart';
+import '../../../core/premium/limits.dart';
+import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/dreams_provider.dart';
 
@@ -199,7 +201,14 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Zaman Kapsülü Yap (Tarihe Kadar Kilitli)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Belirlediğin tarihe kadar gizli kalır', style: TextStyle(fontSize: 11)),
+                    subtitle: Text(
+                      [
+                        'Belirlediğin tarihe kadar gizli kalır',
+                        if (!appState.currentUser.isPremium)
+                          AppLocalizations.of(context).textf('capsule_free_note', {'n': Limits.freeCapsulesPerMonth}),
+                      ].join('\n'),
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     value: isCapsule,
                     onChanged: (val) {
                       setModalState(() {
@@ -242,11 +251,23 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final title = titleController.text.trim();
                   final content = contentController.text.trim();
                   if (title.isNotEmpty && content.isNotEmpty) {
-                    Provider.of<DreamsProvider>(context, listen: false).addLoveNote(
+                    final dreams = Provider.of<DreamsProvider>(context, listen: false);
+                    if (isCapsule) {
+                      final allowed = await PremiumGate.check(
+                        context,
+                        allowed: Limits.canCreateCapsule(
+                          createdThisMonth: dreams.capsulesCreatedThisMonth,
+                          premium: PremiumGate.isPremium(context),
+                        ),
+                        source: PaywallSource.capsuleLimit,
+                      );
+                      if (!allowed || !ctx.mounted) return;
+                    }
+                    dreams.addLoveNote(
                       senderName: appState.currentUser.name,
                       title: title,
                       content: content,

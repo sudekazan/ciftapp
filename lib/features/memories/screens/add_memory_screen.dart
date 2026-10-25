@@ -4,6 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/premium/limits.dart';
+import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/memories_provider.dart';
 import '../../../core/services/photo_storage.dart';
 
@@ -56,14 +59,28 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
   }
 
   Future<void> _pickImagesFromGallery() async {
+    final isPremium = PremiumGate.isPremium(context);
+    final maxPhotos = Limits.maxPhotosPerMemory(premium: isPremium);
+    final remaining = maxPhotos - _selectedImageUrls.length;
+    if (remaining <= 0) {
+      if (isPremium) {
+        _showPhotoLimit(maxPhotos);
+      } else {
+        await PremiumGate.openPaywall(context, PaywallSource.photoLimit);
+      }
+      return;
+    }
     try {
-      final List<XFile> images = await _picker.pickMultiImage();
+      final List<XFile> images = remaining == 1
+          ? [if (await _picker.pickImage(source: ImageSource.gallery) case final image?) image]
+          : await _picker.pickMultiImage(limit: remaining);
       if (images.isNotEmpty) {
         setState(() {
-          for (final img in images) {
+          for (final img in images.take(remaining)) {
             _selectedImageUrls.add(img.path);
           }
         });
+        if (images.length > remaining) _showPhotoLimit(maxPhotos);
       }
     } catch (e) {
       if (!mounted) return;
@@ -74,6 +91,15 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
         ),
       );
     }
+  }
+
+  void _showPhotoLimit(int maxPhotos) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).textf('photo_limit_reached', {'n': maxPhotos})),
+        backgroundColor: AppColors.secondary,
+      ),
+    );
   }
 
   void _addTag() {

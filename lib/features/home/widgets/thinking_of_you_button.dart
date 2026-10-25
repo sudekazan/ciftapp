@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/premium/limits.dart';
+import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
 
 class ThinkingOfYouButton extends StatefulWidget {
@@ -39,10 +41,15 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
     super.dispose();
   }
 
-  void _onTapHeart() {
-    _animController.forward(from: 0.0);
+  Future<void> _onTapHeart() async {
     final appState = Provider.of<AppStateProvider>(context, listen: false);
-    appState.triggerThinkingOfYou();
+    if (!appState.canSendPulse) {
+      await PremiumGate.openPaywall(context, PaywallSource.pulseLimit);
+      return;
+    }
+    _animController.forward(from: 0.0);
+    await appState.triggerThinkingOfYou();
+    if (!mounted) return;
 
     setState(() => _recentlyTapped = true);
     Future.delayed(const Duration(seconds: 4), () {
@@ -168,6 +175,15 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                     l10n.text('thinking_of_you_sub'),
                     style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                   ),
+                  if (!user.isPremium) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.textf('pulse_remaining', {
+                        'n': (Limits.freeDailyPulses - appState.pulsesSentToday).clamp(0, Limits.freeDailyPulses),
+                      }),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11, color: AppColors.primary),
+                    ),
+                  ],
                 ],
               ),
             ],

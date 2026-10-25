@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 import 'core/localization/app_localizations.dart';
+import 'core/premium/limits.dart';
 import 'core/providers/app_state_provider.dart';
 import 'core/providers/couple_bound_provider.dart';
 import 'core/providers/dreams_provider.dart';
@@ -53,6 +56,8 @@ void main() async {
   }
 
   await TimeZoneService.init();
+  // Free/premium limits can be tuned remotely; defaults apply until fetched.
+  unawaited(Limits.loadRemote());
 
   // Initialize Notification Service (FCM & Alerts)
   await NotificationService.instance.init();

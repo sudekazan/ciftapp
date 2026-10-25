@@ -205,6 +205,18 @@ class AppLocalizations {
       'offerings_unavailable': 'Planlar mağazadan yüklenemedi. Lütfen internet bağlantını kontrol et.',
       'restore_success': 'Aboneliğin başarıyla geri yüklendi! ❤️',
       'restore_none': 'Bu hesaba ait aktif bir abonelik bulunamadı.',
+      'paywall_reason_memoryLimit': 'Ücretsiz planda {n} anı ekleyebilirsin. Sınırsız anı için Premium’a geç.',
+      'paywall_reason_photoLimit': 'Ücretsiz planda anı başına {n} fotoğraf ekleyebilirsin. Premium ile {m} fotoğrafa kadar.',
+      'paywall_reason_pulseLimit': 'Bugünkü {n} ücretsiz "Seni düşünüyorum" hakkını kullandın. Premium ile sınırsız gönder.',
+      'paywall_reason_capsuleLimit': 'Ücretsiz planda ayda {n} zaman kapsülü oluşturabilirsin. Premium ile sınırsız.',
+      'paywall_reason_questionArchive': 'Son {n} günden eski cevaplarınızı görmek için Premium’a geç.',
+      'paywall_reason_questionPack': 'Bu soru paketi Premium’a özel. Tüm paketleri birlikte açın.',
+      'memories_free_usage': 'Ücretsiz plan: {n}/{m} anı',
+      'memories_upgrade_hint': 'Sınırsız anı ve anı başına {m} fotoğraf için Premium’a geç',
+      'photo_limit_reached': 'Bu anıya en fazla {n} fotoğraf ekleyebilirsin.',
+      'pulse_remaining': 'Bugün {n} ücretsiz dokunuş hakkın kaldı',
+      'archive_locked': '{n} günden eski cevaplar Premium’da',
+      'capsule_free_note': 'Ücretsiz planda ayda {n} zaman kapsülü oluşturabilirsin.',
     },
     'en': {
       'app_name': 'Yanyana',
@@ -397,6 +409,18 @@ class AppLocalizations {
       'offerings_unavailable': "Plans couldn't be loaded from the store. Please check your connection.",
       'restore_success': 'Your subscription has been restored! ❤️',
       'restore_none': 'No active subscription was found for this account.',
+      'paywall_reason_memoryLimit': 'The free plan includes {n} memories. Go Premium for unlimited memories.',
+      'paywall_reason_photoLimit': 'The free plan allows {n} photos per memory. Premium allows up to {m}.',
+      'paywall_reason_pulseLimit': 'You used today\'s {n} free "Thinking of you" taps. Go Premium to send unlimited.',
+      'paywall_reason_capsuleLimit': 'The free plan includes {n} time capsule per month. Premium is unlimited.',
+      'paywall_reason_questionArchive': 'Go Premium to see your answers older than {n} days.',
+      'paywall_reason_questionPack': 'This question pack is Premium. Unlock every pack together.',
+      'memories_free_usage': 'Free plan: {n}/{m} memories',
+      'memories_upgrade_hint': 'Go Premium for unlimited memories and {m} photos per memory',
+      'photo_limit_reached': 'You can add up to {n} photos to this memory.',
+      'pulse_remaining': '{n} free taps left today',
+      'archive_locked': 'Answers older than {n} days are Premium',
+      'capsule_free_note': 'The free plan includes {n} time capsule per month.',
     },
   };
 
@@ -408,6 +432,13 @@ class AppLocalizations {
     return _localizedValues[lang]?[key] ??
         _localizedValues['tr']?[key] ??
         key;
+  }
+
+  /// [text] with `{name}` placeholders replaced, e.g. `textf('k', {'n': 3})`.
+  String textf(String key, Map<String, Object> args) {
+    var value = text(key);
+    args.forEach((name, arg) => value = value.replaceAll('{$name}', '$arg'));
+    return value;
   }
 }
 

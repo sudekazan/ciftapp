@@ -56,6 +56,18 @@ class DreamsProvider extends ChangeNotifier with CoupleBoundProvider {
     return author == null || author == dataStore.currentUid;
   }
 
+  /// Time capsules this user created in the current month (free plan limit).
+  int get capsulesCreatedThisMonth {
+    final now = DateTime.now();
+    return loveNotes
+        .where((n) =>
+            n.isTimeCapsule &&
+            isMyNote(n.id) &&
+            n.createdAt.year == now.year &&
+            n.createdAt.month == now.month)
+        .length;
+  }
+
   Future<void> _load() async {
     for (final list in syncedLists) {
       await list.loadLocal();

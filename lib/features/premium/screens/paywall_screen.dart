@@ -6,11 +6,29 @@ import '../../../core/constants/app_links.dart';
 import '../../../core/constants/revenuecat_constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/subscription_plan.dart';
+import '../../../core/premium/limits.dart';
+import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/services/purchase_service.dart';
 
 class PaywallScreen extends StatefulWidget {
-  const PaywallScreen({super.key});
+  final PaywallSource source;
+  const PaywallScreen({super.key, this.source = PaywallSource.profile});
+
+  /// Explains which limit opened the paywall, or `null` for a plain paywall.
+  static String? reasonText(AppLocalizations l10n, PaywallSource source) {
+    return switch (source) {
+      PaywallSource.memoryLimit => l10n.textf('paywall_reason_memoryLimit', {'n': Limits.freeMemories}),
+      PaywallSource.photoLimit => l10n.textf('paywall_reason_photoLimit',
+          {'n': Limits.freePhotosPerMemory, 'm': Limits.premiumPhotosPerMemory}),
+      PaywallSource.pulseLimit => l10n.textf('paywall_reason_pulseLimit', {'n': Limits.freeDailyPulses}),
+      PaywallSource.capsuleLimit => l10n.textf('paywall_reason_capsuleLimit', {'n': Limits.freeCapsulesPerMonth}),
+      PaywallSource.questionArchive =>
+        l10n.textf('paywall_reason_questionArchive', {'n': Limits.freeQuestionArchiveDays}),
+      PaywallSource.questionPack => l10n.text('paywall_reason_questionPack'),
+      PaywallSource.profile || PaywallSource.onboarding => null,
+    };
+  }
 
   @override
   State<PaywallScreen> createState() => _PaywallScreenState();
@@ -221,6 +239,25 @@ class _PaywallScreenState extends State<PaywallScreen> {
               style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
               textAlign: TextAlign.center,
             ),
+            if (PaywallScreen.reasonText(l10n, widget.source) case final reason?) ...[
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.accentGold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.lock_open_rounded, color: AppColors.accentGold, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(reason, style: const TextStyle(fontSize: 12.5, height: 1.35))),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
 
             // Feature List Cards

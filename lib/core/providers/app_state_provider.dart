@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/relationship_mode.dart';
+import '../premium/limits.dart';
 import '../models/user_model.dart';
 import '../services/couple_data_store.dart';
 import '../services/couple_sync_service.dart';
@@ -226,6 +227,8 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       _hasCompletedSetup = prefs.getBool('ciftapp_setup_completed') ?? false;
       _partnerUtcOffsetMinutes = prefs.getInt('ciftapp_partner_utc_offset_min');
       _partnerTimeZoneName = prefs.getString('ciftapp_partner_tz_name');
+      _pulseDay = prefs.getString('ciftapp_pulse_day');
+      _pulsesToday = prefs.getInt('ciftapp_pulse_count') ?? 0;
       _coupleId = prefs.getString('ciftapp_couple_id');
 
       var inviteCode = prefs.getString('ciftapp_invite_code');
@@ -574,8 +577,28 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     await prefs.setString('ciftapp_mode', mode.id);
   }
 
-  Future<void> triggerThinkingOfYou() async {
+  // "Thinking of you" pulses sent today (free plan has a daily limit).
+  int _pulsesToday = 0;
+  String? _pulseDay;
+
+  static String _todayKey() => DateTime.now().toIso8601String().substring(0, 10);
+
+  int get pulsesSentToday => _pulseDay == _todayKey() ? _pulsesToday : 0;
+
+  bool get canSendPulse =>
+      Limits.canSendPulse(sentToday: pulsesSentToday, premium: _currentUser.isPremium);
+
+  /// Sends a pulse to the partner. Returns `false` when the free daily limit
+  /// is reached (the UI then offers premium).
+  Future<bool> triggerThinkingOfYou() async {
+    if (!canSendPulse) return false;
     HapticFeedback.heavyImpact();
+    final today = _todayKey();
+    _pulsesToday = pulsesSentToday + 1;
+    _pulseDay = today;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ciftapp_pulse_day', today);
+    await prefs.setInt('ciftapp_pulse_count', _pulsesToday);
 
     _currentUser = _currentUser.copyWith(
       lastThinkingOfYou: DateTime.now(),
@@ -589,6 +612,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
         _currentUser.name.isEmpty ? 'Ben' : _currentUser.name,
       );
     }
+    return true;
   }
 
   void receivePartnerThinkingOfYou({DateTime? at}) {

@@ -6,7 +6,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/memories_provider.dart';
-import '../../premium/screens/paywall_screen.dart';
+import '../../../core/premium/limits.dart';
+import '../../../core/premium/premium_gate.dart';
 import 'add_memory_screen.dart';
 import 'memory_detail_screen.dart';
 
@@ -35,7 +36,14 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
     super.dispose();
   }
 
-  void _showAddMemory() {
+  Future<void> _showAddMemory() async {
+    final count = Provider.of<MemoriesProvider>(context, listen: false).memories.length;
+    final allowed = await PremiumGate.check(
+      context,
+      allowed: Limits.canAddMemory(count: count, premium: PremiumGate.isPremium(context)),
+      source: PaywallSource.memoryLimit,
+    );
+    if (!allowed || !mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const AddMemoryScreen()),
     );
@@ -149,6 +157,8 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
   Widget _buildMemoryBookTab(ThemeData theme, bool isDark, AppLocalizations l10n) {
     final memoriesProvider = Provider.of<MemoriesProvider>(context);
     final allMemories = memoriesProvider.memories;
+    final isPremium = Provider.of<AppStateProvider>(context).currentUser.isPremium;
+    final l10n = AppLocalizations.of(context);
 
     final filteredMemories = allMemories.where((memory) {
       if (_onlyFavorites && !memory.isFavorite) return false;
@@ -166,66 +176,61 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       children: [
-        // Annual Book Export Banner (Premium feature)
-        InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PaywallScreen()),
-            );
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: AppColors.darkCardGradient,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGold.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
+        // Free plan usage (premium: unlimited)
+        if (!isPremium) ...[
+          InkWell(
+            onTap: () => PremiumGate.openPaywall(context, PaywallSource.memoryLimit),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: AppColors.darkCardGradient,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentGold.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: AppColors.accentGold, size: 24),
                   ),
-                  child: const Icon(Icons.menu_book_rounded, color: AppColors.accentGold, size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Yıllık Anı Kitabı',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.textf('memories_free_usage', {'n': allMemories.length, 'm': Limits.freeMemories}),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (allMemories.length / Limits.freeMemories).clamp(0.0, 1.0),
+                            minHeight: 5,
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            color: AppColors.accentGold,
                           ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentGold,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text('PREMIUM', style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Tüm anılarınızı şık bir dijital kitaba veya PDF çıktısına dönüştürün.',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11),
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.textf('memories_upgrade_hint', {'m': Limits.premiumPhotosPerMemory}),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right_rounded, color: Colors.white),
-              ],
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 14),
+        ],
 
         // Search and Favorites Filter Bar
         Row(

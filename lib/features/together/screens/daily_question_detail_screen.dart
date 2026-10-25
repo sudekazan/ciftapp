@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/premium/limits.dart';
+import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/together_provider.dart';
 
@@ -48,6 +50,11 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
 
     final question = togetherProvider.todaysQuestion;
     final partnerName = appState.currentUser.partnerName ?? 'Can';
+
+    final isPremium = appState.currentUser.isPremium;
+    final archive = togetherProvider.archive(Limits.questionArchiveDays(premium: isPremium));
+    final hasLockedArchive = !isPremium &&
+        togetherProvider.archive(Limits.premiumQuestionArchiveDays).length > archive.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -211,7 +218,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            ...togetherProvider.pastQuestions.map(
+            ...archive.map(
               (pq) => Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ExpansionTile(
@@ -240,6 +247,18 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
                 ),
               ),
             ),
+            if (hasLockedArchive)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.lock_rounded, color: AppColors.accentGold),
+                  title: Text(
+                    l10n.textf('archive_locked', {'n': Limits.freeQuestionArchiveDays}),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  trailing: const Icon(Icons.workspace_premium_rounded, color: AppColors.accentGold),
+                  onTap: () => PremiumGate.openPaywall(context, PaywallSource.questionArchive),
+                ),
+              ),
           ],
         ),
       ),

@@ -81,7 +81,6 @@ class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
   late final SyncedList<WatchlistItem> _watchlist;
 
   late DailyQuestion _todaysQuestion;
-  final List<DailyQuestion> _pastQuestions = [];
   final List<QuizQuestion> _coupleQuiz = [];
   final List<WhoMoreQuestion> _whoMoreList = [];
 
@@ -102,7 +101,15 @@ class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
   Iterable<SyncedList> get syncedLists => [_watchlist];
 
   DailyQuestion get todaysQuestion => _todaysQuestion;
-  List<DailyQuestion> get pastQuestions => List.unmodifiable(_pastQuestions);
+
+  /// Answered questions of the last [days] days, newest first (today excluded).
+  List<DailyQuestion> archive(int days) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return [
+      for (var i = 1; i <= days; i++) _questionFor(today.subtract(Duration(days: i))),
+    ].where((q) => q.isMyAnswered || q.isPartnerAnswered).toList();
+  }
   List<WatchlistItem> get watchlist => _watchlist.items;
   List<QuizQuestion> get coupleQuiz => List.unmodifiable(_coupleQuiz);
   List<WhoMoreQuestion> get whoMoreList => List.unmodifiable(_whoMoreList);
@@ -143,11 +150,6 @@ class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     _todaysQuestion = _questionFor(today);
-
-    _pastQuestions
-      ..clear()
-      ..addAll(List.generate(2, (i) => _questionFor(today.subtract(Duration(days: i + 1))))
-          .where((q) => q.isMyAnswered));
 
     _coupleQuiz
       ..clear()
