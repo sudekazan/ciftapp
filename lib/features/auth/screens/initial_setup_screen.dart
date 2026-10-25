@@ -30,6 +30,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   bool _isLoading = false;
   bool _consentAccepted = false;
 
+  AppLocalizations get _t => AppLocalizations.of(context);
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -41,8 +43,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen devam etmek için adınızı veya takma adınızı girin ❤️'),
+        SnackBar(
+          content: Text(_t.text('setup_enter_name_snack')),
           backgroundColor: AppColors.primary,
         ),
       );
@@ -87,15 +89,15 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   Future<void> _finishSetup() async {
     if (!_consentAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen 17 yaşından büyük olduğunuzu ve şartları kabul ettiğinizi onaylayın.'),
+        SnackBar(
+          content: Text(_t.text('setup_consent_snack')),
           backgroundColor: Colors.redAccent,
         ),
       );
       return;
     }
 
-    final name = _nameController.text.trim().isEmpty ? 'Ben' : _nameController.text.trim();
+    final name = _nameController.text.trim().isEmpty ? _t.text('default_my_name') : _nameController.text.trim();
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
     setState(() => _isLoading = true);
@@ -173,10 +175,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
 
   Widget _buildStepIndicator(bool isDark, AppStateProvider appState) {
     final steps = [
-      {'label': '1. Adınız', 'icon': Icons.person_rounded},
-      {'label': '2. Tarihimiz', 'icon': Icons.calendar_month_rounded},
-      {'label': '3. Modumuz', 'icon': Icons.public_rounded},
-      {'label': '4. Çift Alanı', 'icon': Icons.favorite_rounded},
+      {'label': _t.text('setup_step1_label'), 'icon': Icons.person_rounded},
+      {'label': _t.text('setup_step2_label'), 'icon': Icons.calendar_month_rounded},
+      {'label': _t.text('setup_step3_label'), 'icon': Icons.public_rounded},
+      {'label': _t.text('setup_step4_label'), 'icon': Icons.favorite_rounded},
     ];
 
     return Container(
@@ -349,12 +351,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Yanyana’ya Hoş Geldin! ✨',
+            _t.text('setup_welcome_title'),
             style: theme.textTheme.displayLarge?.copyWith(fontSize: 26, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(
-            'İkinize özel aşk evreninizi oluşturmaya başlamak için önce seni tanıyalım.',
+            _t.text('setup_welcome_sub'),
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
           ),
           const SizedBox(height: 36),
@@ -386,7 +388,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Seni nasıl çağıralım?',
+                      _t.text('setup_name_question'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -397,7 +399,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Adın veya partnerinin sana seslendiği tatlı bir takma ad:',
+                  _t.text('setup_name_help'),
                   style: TextStyle(
                     fontSize: 12.5,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -410,7 +412,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                   textCapitalization: TextCapitalization.words,
                   onSubmitted: (_) => _goToStep2Date(),
                   decoration: InputDecoration(
-                    hintText: 'Örn: Sude veya Can',
+                    hintText: _t.text('setup_name_hint'),
                     prefixIcon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
                     suffixIcon: _nameController.text.isNotEmpty
                         ? IconButton(
@@ -434,10 +436,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
             onPressed: _goToStep2Date,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Text('Bir Sonraki Adım: Başlangıç Tarihimiz'),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward_rounded, size: 18),
+              children: [
+                Text(_t.text('setup_next_date')),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_rounded, size: 18),
               ],
             ),
           ),
@@ -455,16 +457,17 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     final remainingDays = daysTogether % 365;
     final months = remainingDays ~/ 30;
 
-    String durationText;
+    final String durationText;
     if (years > 0 && months > 0) {
-      durationText = '$years yıl $months aydır sevgiyle el ele... 💖';
+      durationText = _t.textf('setup_duration_years_months', {'y': years, 'm': months});
     } else if (years > 0) {
-      durationText = '$years yıldır sevgiyle el ele... 💖';
+      durationText = _t.textf('setup_duration_years', {'y': years});
     } else if (months > 0) {
-      durationText = '$months aydır sevgiyle el ele... 💖';
+      durationText = _t.textf('setup_duration_months', {'m': months});
     } else {
-      durationText = '$daysTogether gündür her anı birlikte... 💖';
+      durationText = _t.textf('setup_duration_days', {'d': daysTogether});
     }
+    final lang = Localizations.localeOf(context).languageCode;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
@@ -476,12 +479,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () => setState(() => _currentStep = 0),
-                tooltip: 'Geri: Adımı Değiştir',
+                tooltip: _t.text('setup_back'),
               ),
               const SizedBox(width: 4),
-              const Text(
-                'Adım 2 / 4: Birliktelik Başlangıcı',
-                style: TextStyle(
+              Text(
+                _t.text('setup_step2_header'),
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -491,12 +494,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Birlikte Olmaya Başladığımız Tarih 💍',
+            _t.text('setup_date_title'),
             style: theme.textTheme.displayLarge?.copyWith(fontSize: 24, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
-            'Ne zamandır birliktesiniz? Birlikte geçen günlerinizi sayabilmemiz ve yıl dönümlerinizi kutlayabilmemiz için başlangıç tarihinizi seçin.',
+            _t.text('setup_date_sub'),
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.5),
           ),
           const SizedBox(height: 24),
@@ -538,17 +541,17 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Birliktelik Başlangıç Tarihi',
-                              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                            Text(
+                              _t.text('profile_start_date'),
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              DateFormat('d MMMM yyyy').format(_startDate),
+                              DateFormat('d MMMM yyyy', lang).format(_startDate),
                               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
                             ),
                             Text(
-                              DateFormat('EEEE', 'tr').format(_startDate),
+                              DateFormat('EEEE', lang).format(_startDate),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -564,10 +567,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
-                          children: const [
-                            Icon(Icons.edit_calendar_rounded, color: AppColors.primary, size: 16),
-                            SizedBox(width: 4),
-                            Text('Değiştir', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                          children: [
+                            const Icon(Icons.edit_calendar_rounded, color: AppColors.primary, size: 16),
+                            const SizedBox(width: 4),
+                            Text(_t.text('change'), style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -581,7 +584,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
 
           // Quick Preset Chips for Date Picking
           Text(
-            'Hızlı Seçimler:',
+            _t.text('setup_quick_picks'),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -593,14 +596,14 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildQuickDateChip('Bugün ✨', DateTime.now()),
-                _buildQuickDateChip('1 Ay Önce', DateTime.now().subtract(const Duration(days: 30))),
-                _buildQuickDateChip('6 Ay Önce', DateTime.now().subtract(const Duration(days: 180))),
-                _buildQuickDateChip('1 Yıl Önce', DateTime.now().subtract(const Duration(days: 365))),
-                _buildQuickDateChip('2 Yıl Önce', DateTime.now().subtract(const Duration(days: 730))),
+                _buildQuickDateChip(_t.text('setup_quick_today'), DateTime.now()),
+                _buildQuickDateChip(_t.text('setup_quick_1m'), DateTime.now().subtract(const Duration(days: 30))),
+                _buildQuickDateChip(_t.text('setup_quick_6m'), DateTime.now().subtract(const Duration(days: 180))),
+                _buildQuickDateChip(_t.text('setup_quick_1y'), DateTime.now().subtract(const Duration(days: 365))),
+                _buildQuickDateChip(_t.text('setup_quick_2y'), DateTime.now().subtract(const Duration(days: 730))),
                 ActionChip(
                   avatar: const Icon(Icons.date_range_rounded, size: 16, color: AppColors.primary),
-                  label: const Text('Takvimden Seç...'),
+                  label: Text(_t.text('setup_quick_calendar')),
                   onPressed: _pickDate,
                 ),
               ],
@@ -643,7 +646,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Bugün $daysTogether. Gününüz!',
+                            _t.textf('setup_today_day_n', {'n': daysTogether}),
                             style: const TextStyle(
                               color: AppColors.primaryDark,
                               fontSize: 16,
@@ -665,7 +668,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '💡 Bu tarih Ana Sayfa sayaçlarınızda, Yıl Dönümü hatırlatıcılarında ve Anı Defteri’nde kullanılacaktır.',
+                  _t.text('setup_date_hint'),
                   style: TextStyle(
                     fontSize: 11.5,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -682,10 +685,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
             onPressed: _goToStep3Mode,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Text('Bir Sonraki Adım: İlişki Modumuz'),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward_rounded, size: 18),
+              children: [
+                Text(_t.text('setup_next_mode')),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_rounded, size: 18),
               ],
             ),
           ),
@@ -708,12 +711,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () => setState(() => _currentStep = 1),
-                tooltip: 'Geri: Tarihi Değiştir',
+                tooltip: _t.text('setup_back'),
               ),
               const SizedBox(width: 4),
-              const Text(
-                'Adım 3 / 4: İlişki Modu',
-                style: TextStyle(
+              Text(
+                _t.text('setup_step3_header'),
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -723,12 +726,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Nasıl Bir Birlikteliğiniz Var? 🌍',
+            _t.text('setup_mode_title'),
             style: theme.textTheme.displayLarge?.copyWith(fontSize: 24, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
-            'İlişkinizin durumuna göre ana sayfanız ve öne çıkan araçlar özelleştirilir. İstediğiniz zaman Profil sayfasından değiştirebilirsiniz.',
+            _t.text('setup_mode_sub'),
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.5),
           ),
           const SizedBox(height: 24),
@@ -736,13 +739,13 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           // Mod 1: Uzak Mesafe Kartı
           _buildModeSelectionCard(
             mode: RelationshipMode.longDistance,
-            title: 'Uzak Mesafe İlişkisi Yaşıyoruz ✈️',
-            badge: 'Ayrı Şehirler veya Ülkeler',
-            desc: 'Ayrı yerlerde olsanız bile aradaki mesafeleri kaldıran araçlar:',
+            title: _t.text('setup_ld_title'),
+            badge: _t.text('setup_ld_badge'),
+            desc: _t.text('setup_ld_desc'),
             features: [
-              'İki şehir arası çift saat dilimi (Dual Clock)',
-              'Büyük buluşma günü canlı geri sayım sayacı',
-              '"Seni Düşünüyorum" anlık sevgi dalgası dokunuşu',
+              _t.text('setup_ld_feat1'),
+              _t.text('setup_ld_feat2'),
+              _t.text('setup_ld_feat3'),
             ],
             icon: Icons.flight_takeoff_rounded,
             theme: theme,
@@ -753,13 +756,13 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           // Mod 2: Aynı Evde Yaşıyoruz Kartı
           _buildModeSelectionCard(
             mode: RelationshipMode.coLiving,
-            title: 'Aynı Evde Birlikte Yaşıyoruz 🏡',
-            badge: 'Aynı Çatı Altında',
-            desc: 'Aynı evi paylaşan çiftler için günlük hayatı kolaylaştıran araçlar:',
+            title: _t.text('setup_cl_title'),
+            badge: _t.text('setup_cl_badge'),
+            desc: _t.text('setup_cl_desc'),
             features: [
-              'Ortak ev işleri ve görev paylaşımı (Temizlik, yemek vb.)',
-              'Canlı ortak market & alışveriş listesi',
-              'Ortak takvim ve günün planı',
+              _t.text('setup_cl_feat1'),
+              _t.text('setup_cl_feat2'),
+              _t.text('setup_cl_feat3'),
             ],
             icon: Icons.home_rounded,
             theme: theme,
@@ -772,10 +775,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
             onPressed: _goToStep4Pairing,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Text('Bir Sonraki Adım: Çift Alanı Kurulumu'),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward_rounded, size: 18),
+              children: [
+                Text(_t.text('setup_next_pairing')),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_rounded, size: 18),
               ],
             ),
           ),
@@ -934,7 +937,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   // ADIM 4: Çift Alanı Kurulumu (Partner Eşleşmesi)
   // ==========================================
   Widget _buildStep4PairingChoice(ThemeData theme, bool isDark, AppStateProvider appState) {
-    final modeName = _selectedMode == RelationshipMode.longDistance ? 'Uzak Mesafe ✈️' : 'Birlikte Yaşıyoruz 🏡';
+    final modeName = _t.text(_selectedMode == RelationshipMode.longDistance ? 'setup_mode_name_ld' : 'setup_mode_name_cl');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
@@ -946,12 +949,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () => setState(() => _currentStep = 2),
-                tooltip: 'Geri: Modu Değiştir',
+                tooltip: _t.text('setup_back'),
               ),
               const SizedBox(width: 4),
-              const Text(
-                'Adım 4 / 4: Çift Alanı Kurulumu',
-                style: TextStyle(
+              Text(
+                _t.text('setup_step4_header'),
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -961,12 +964,12 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Çift Alanınızı Başlatalım ✨',
+            _t.text('setup_pair_title'),
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 23),
           ),
           const SizedBox(height: 6),
           Text(
-            '$modeName modunda ortak alanınızı başlatmak için bir seçenek belirleyin:',
+            _t.textf('setup_pair_sub', {'mode': modeName}),
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
           ),
           const SizedBox(height: 20),
@@ -974,8 +977,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           // Option A: Have Partner's Code
           _buildChoiceCard(
             id: 'have_code',
-            title: 'Partnerimin Davet Kodu Var 🔑',
-            subtitle: 'Partneriniz daha önce alanı oluşturduysa, verdiği davet kodunu girin ve hemen katılın.',
+            title: _t.text('setup_have_code_title'),
+            subtitle: _t.text('setup_have_code_sub'),
             isSelected: _pathChoice == 'have_code',
             theme: theme,
             isDark: isDark,
@@ -988,9 +991,9 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         TextField(
                           controller: _partnerCodeController,
                           textCapitalization: TextCapitalization.characters,
-                          decoration: const InputDecoration(
-                            hintText: 'Örn: CFT-K7M2QX',
-                            prefixIcon: Icon(Icons.vpn_key_rounded, color: AppColors.primary),
+                          decoration: InputDecoration(
+                            hintText: _t.text('setup_code_hint'),
+                            prefixIcon: const Icon(Icons.vpn_key_rounded, color: AppColors.primary),
                           ),
                         ),
                       ],
@@ -1003,8 +1006,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           // Option B: Create New Space
           _buildChoiceCard(
             id: 'create_new',
-            title: 'Yeni Çift Alanı Başlat ✨',
-            subtitle: 'Alanınızı kurun ve partnerinizi davet ederek birlikte başlayın.',
+            title: _t.text('setup_create_title'),
+            subtitle: _t.text('setup_create_sub'),
             isSelected: _pathChoice == 'create_new',
             theme: theme,
             isDark: isDark,
@@ -1026,7 +1029,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Senin Davet Kodun:', style: TextStyle(fontSize: 11, color: AppColors.primaryDark)),
+                                  Text(_t.text('setup_your_code'), style: const TextStyle(fontSize: 11, color: AppColors.primaryDark)),
                                   Text(
                                     appState.currentUser.inviteCode,
                                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryDark),
@@ -1036,7 +1039,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                               OutlinedButton.icon(
                                 onPressed: () => _shareInviteCode(appState.currentUser.inviteCode),
                                 icon: const Icon(Icons.share_rounded, size: 14),
-                                label: const Text('Paylaş', style: TextStyle(fontSize: 11)),
+                                label: Text(_t.text('share'), style: const TextStyle(fontSize: 11)),
                                 style: OutlinedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   side: const BorderSide(color: AppColors.primary),
@@ -1072,7 +1075,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          '17 yaşından büyüğüm. ',
+                          _t.text('consent_prefix'),
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1080,9 +1083,9 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         ),
                         GestureDetector(
                           onTap: () => AppLinks.open(context, AppLinks.privacyPolicy),
-                          child: const Text(
-                            'Gizlilik Politikası',
-                            style: TextStyle(
+                          child: Text(
+                            _t.text('consent_privacy'),
+                            style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -1091,7 +1094,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                           ),
                         ),
                         Text(
-                          ' ve ',
+                          _t.text('consent_and'),
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1099,9 +1102,9 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                         ),
                         GestureDetector(
                           onTap: () => AppLinks.open(context, AppLinks.termsOfUse),
-                          child: const Text(
-                            'Kullanım Şartları',
-                            style: TextStyle(
+                          child: Text(
+                            _t.text('consent_terms'),
+                            style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -1110,7 +1113,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                           ),
                         ),
                         Text(
-                          '’nı okudum, onaylıyorum.',
+                          _t.text('consent_suffix'),
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1133,7 +1136,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     width: 20,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : const Text('Yanyana’yı Başlat ❤️'),
+                : Text(_t.text('setup_start_btn')),
           ),
           const SizedBox(height: 12),
 
@@ -1144,7 +1147,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                 _finishSetup();
               },
               child: Text(
-                'Şimdilik Tek Başıma İncele',
+                _t.text('setup_explore_alone'),
                 style: TextStyle(
                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                   fontSize: 12,

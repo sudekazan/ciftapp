@@ -18,16 +18,28 @@ class DreamsScreen extends StatefulWidget {
 
 class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedCategory = 'Tümü';
+  String _selectedCategory = _allCategory;
 
-  final List<String> _categories = [
-    'Tümü',
-    'Seyahat ✈️',
-    'Romantik 🍷',
-    'Macera 🏕️',
-    'Gelecek & Ev 🏡',
-    'Deneyim 🎨',
-  ];
+  // Category values are stored with the item (Turkish ids, kept for existing
+  // data); only their display text is localized.
+  static const _allCategory = 'Tümü';
+  static const Map<String, String> _categoryKeys = {
+    'Tümü': 'cat_all',
+    'Seyahat ✈️': 'cat_travel',
+    'Romantik 🍷': 'cat_romantic',
+    'Macera 🏕️': 'cat_adventure',
+    'Gelecek & Ev 🏡': 'cat_future_home',
+    'Deneyim 🎨': 'cat_experience',
+  };
+  final List<String> _categories = _categoryKeys.keys.toList();
+
+  AppLocalizations get _t => AppLocalizations.of(context);
+  String get _lang => Localizations.localeOf(context).languageCode;
+
+  String _categoryLabel(String category) {
+    final key = _categoryKeys[category];
+    return key == null ? category : _t.text(key);
+  }
 
   @override
   void initState() {
@@ -53,10 +65,10 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
             title: Row(
-              children: const [
-                Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 22),
-                SizedBox(width: 8),
-                Text('Yeni Hayal Ekle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              children: [
+                const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 22),
+                const SizedBox(width: 8),
+                Text(_t.text('dreams_add_dream'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
             content: SingleChildScrollView(
@@ -66,21 +78,21 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                 children: [
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Birlikte ne yapmak istersiniz?',
-                      hintText: 'Örn: Roma’da el ele yürümek',
+                    decoration: InputDecoration(
+                      labelText: _t.text('dream_title_label'),
+                      hintText: _t.text('dream_title_hint'),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Kategori:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(_t.text('dream_category_label'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,
-                    children: _categories.where((c) => c != 'Tümü').map((cat) {
+                    children: _categories.where((c) => c != _allCategory).map((cat) {
                       final isSel = category == cat;
                       return ChoiceChip(
-                        label: Text(cat, style: const TextStyle(fontSize: 11.5)),
+                        label: Text(_categoryLabel(cat), style: const TextStyle(fontSize: 11.5)),
                         selected: isSel,
                         onSelected: (_) => setModalState(() => category = cat),
                       );
@@ -89,17 +101,17 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                   const SizedBox(height: 14),
                   TextField(
                     controller: targetDateController,
-                    decoration: const InputDecoration(
-                      labelText: 'Hedef Zaman (İsteğe Bağlı)',
-                      hintText: 'Örn: 2027 Yazı',
-                      prefixIcon: Icon(Icons.event_outlined, color: AppColors.primary),
+                    decoration: InputDecoration(
+                      labelText: _t.text('dream_target_label'),
+                      hintText: _t.text('dream_target_hint'),
+                      prefixIcon: const Icon(Icons.event_outlined, color: AppColors.primary),
                     ),
                   ),
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
               ElevatedButton(
                 onPressed: () {
                   final title = titleController.text.trim();
@@ -112,7 +124,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Ekle ✨'),
+                child: Text(_t.text('dream_add_btn')),
               ),
             ],
           );
@@ -148,7 +160,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               children: [
                 Icon(isCapsule ? Icons.lock_clock_rounded : Icons.edit_note_rounded, color: AppColors.primary, size: 22),
                 const SizedBox(width: 8),
-                Text(isCapsule ? 'Zaman Kapsülü Mektubu' : 'Aşk Notu Bırak', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text(_t.text(isCapsule ? 'note_capsule_title' : 'note_plain_title'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
             content: SingleChildScrollView(
@@ -158,22 +170,22 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                 children: [
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Başlık',
-                      hintText: 'Örn: Seni Neden Seviyorum? ❤️',
+                    decoration: InputDecoration(
+                      labelText: _t.text('note_title_label'),
+                      hintText: _t.text('note_title_hint'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: contentController,
                     maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Sevgi Notun...',
-                      hintText: 'İçinden geçenleri sevgilin için buraya yaz...',
+                    decoration: InputDecoration(
+                      labelText: _t.text('note_content_label'),
+                      hintText: _t.text('note_content_hint'),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Not Kağıdı Rengi:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(_t.text('note_color_label'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Row(
                     children: colors.map((col) {
@@ -200,10 +212,10 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                   const SizedBox(height: 16),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Zaman Kapsülü Yap (Tarihe Kadar Kilitli)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                    title: Text(_t.text('note_capsule_switch'), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                     subtitle: Text(
                       [
-                        'Belirlediğin tarihe kadar gizli kalır',
+                        _t.text('note_capsule_switch_sub'),
                         if (!appState.currentUser.isPremium)
                           AppLocalizations.of(context).textf('capsule_free_note', {'n': Limits.freeCapsulesPerMonth}),
                       ].join('\n'),
@@ -227,8 +239,8 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                       leading: const Icon(Icons.event_available_rounded, color: AppColors.primary),
                       title: Text(
                         scheduledUnlockDate != null
-                            ? DateFormat('d MMMM yyyy').format(scheduledUnlockDate!)
-                            : 'Açılma Tarihi Seç',
+                            ? DateFormat('d MMMM yyyy', _lang).format(scheduledUnlockDate!)
+                            : _t.text('note_pick_unlock_date'),
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       trailing: const Icon(Icons.edit_calendar_rounded, size: 18),
@@ -249,7 +261,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
               ElevatedButton(
                 onPressed: () async {
                   final title = titleController.text.trim();
@@ -277,7 +289,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Kaydet 💌'),
+                child: Text(_t.text('note_save_btn')),
               ),
             ],
           );
@@ -347,7 +359,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
     final dreamsProvider = Provider.of<DreamsProvider>(context);
     final items = dreamsProvider.bucketList;
 
-    final filteredItems = _selectedCategory == 'Tümü'
+    final filteredItems = _selectedCategory == _allCategory
         ? items
         : items.where((it) => it.category == _selectedCategory).toList();
 
@@ -379,10 +391,10 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
-                    children: const [
-                      Icon(Icons.stars_rounded, color: Colors.white, size: 22),
-                      SizedBox(width: 8),
-                      Text('Ortak Hayallerimiz', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    children: [
+                      const Icon(Icons.stars_rounded, color: Colors.white, size: 22),
+                      const SizedBox(width: 8),
+                      Text(_t.text('dreams_progress_title'), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   Container(
@@ -392,7 +404,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '$completedCount / $totalCount Tamamlandı',
+                      _t.textf('dreams_progress_count', {'done': completedCount, 'total': totalCount}),
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
@@ -411,8 +423,8 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               const SizedBox(height: 10),
               Text(
                 percentage == 1.0
-                    ? 'İnanılmaz! Bütün hayallerinizi gerçekleştirdiniz! 🎉'
-                    : 'Hayallerinizi adım adım birlikte gerçekleştirmeye devam edin... ✨',
+                    ? _t.text('dreams_progress_all_done')
+                    : _t.text('dreams_progress_keep_going'),
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12),
               ),
             ],
@@ -429,7 +441,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
-                  label: Text(cat),
+                  label: Text(_categoryLabel(cat)),
                   selected: isSel,
                   selectedColor: AppColors.primarySoft,
                   labelStyle: TextStyle(
@@ -454,7 +466,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               children: [
                 const Icon(Icons.star_outline_rounded, size: 48, color: AppColors.textSecondary),
                 const SizedBox(height: 10),
-                Text('Bu kategoride henüz bir hayal eklemediniz.', style: theme.textTheme.bodyMedium),
+                Text(_t.text('dreams_empty_category'), style: theme.textTheme.bodyMedium),
               ],
             ),
           )
@@ -505,7 +517,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            item.category,
+                            _categoryLabel(item.category),
                             style: const TextStyle(fontSize: 10.5, color: AppColors.primary, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -521,7 +533,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                     if (item.isCompleted && item.completedDate != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        '✨ ${DateFormat('d MMMM yyyy').format(item.completedDate!)} tarihinde gerçekleşti!',
+                        _t.textf('dream_completed_on', {'date': DateFormat('d MMMM yyyy', _lang).format(item.completedDate!)}),
                         style: const TextStyle(fontSize: 11, color: AppColors.accentTeal, fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -542,7 +554,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'delete', child: Text('Hayali Sil', style: TextStyle(color: Colors.redAccent))),
+                    PopupMenuItem(value: 'delete', child: Text(_t.text('dream_delete'), style: const TextStyle(color: Colors.redAccent))),
                   ],
                 ),
               ),
@@ -584,12 +596,12 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('Aşk Notları & Zaman Kapsülü', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    SizedBox(height: 2),
+                  children: [
+                    Text(_t.text('notes_intro_title'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 2),
                     Text(
-                      'Birbirinize özel kalıcı mektuplar bırakın veya ileri bir tarihe kadar kilitli zaman kapsülü oluşturun.',
-                      style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                      _t.text('notes_intro_sub'),
+                      style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -608,7 +620,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               children: [
                 const Icon(Icons.mail_outline_rounded, size: 48, color: AppColors.textSecondary),
                 const SizedBox(height: 10),
-                Text('Henüz bir aşk notu veya zaman kapsülü bırakmadınız.', style: theme.textTheme.bodyMedium),
+                Text(_t.text('dreams_empty_capsule'), style: theme.textTheme.bodyMedium),
               ],
             ),
           )
@@ -657,7 +669,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${note.senderName} tarafından',
+                              _t.textf('note_from', {'name': note.senderName}),
                               style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.bold,
@@ -678,7 +690,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                                 const Icon(Icons.lock_rounded, size: 12, color: AppColors.secondary),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Kilitli Kapsül',
+                                  _t.text('note_locked_badge'),
                                   style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppColors.secondary),
                                 ),
                               ],
@@ -686,7 +698,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                           )
                         else
                           Text(
-                            DateFormat('d MMM yyyy').format(note.createdAt),
+                            DateFormat('d MMM yyyy', _lang).format(note.createdAt),
                             style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
                           ),
                       ],
@@ -714,7 +726,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Bu mektup ${DateFormat('d MMMM yyyy').format(note.unlockDate!)} gününe kadar kilitlidir. Dokunarak kalan süreyi gör.',
+                                _t.textf('note_locked_until', {'date': DateFormat('d MMMM yyyy', _lang).format(note.unlockDate!)}),
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   color: isDark ? Colors.white70 : AppColors.textSecondary,
@@ -747,6 +759,8 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
   void _showLockedCapsuleDialog(LoveNoteItem note) {
     final dreamsProvider = Provider.of<DreamsProvider>(context, listen: false);
     final remaining = note.remainingTime;
+    // Only the author may peek; the capsule stays locked for the partner.
+    final isAuthor = dreamsProvider.isMyNote(note.id);
 
     showDialog(
       context: context,
@@ -767,7 +781,10 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
             Text(note.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18), textAlign: TextAlign.center),
             const SizedBox(height: 8),
             Text(
-              'Bu aşk mektubu ${note.senderName} tarafından senin için yazıldı. Açılma tarihi: ${DateFormat('d MMMM yyyy').format(note.unlockDate!)}',
+              _t.textf(isAuthor ? 'capsule_dialog_author' : 'capsule_dialog_recipient', {
+                'name': note.senderName,
+                'date': DateFormat('d MMMM yyyy', _lang).format(note.unlockDate!),
+              }),
               style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
@@ -779,22 +796,22 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                'Açılmasına ${remaining.inDays} gün kaldı! ⏳',
+                _t.textf('capsule_days_left', {'n': remaining.inDays}),
                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Kapat')),
-          TextButton(
-            onPressed: () {
-              dreamsProvider.unlockLoveNote(note.id);
-              Navigator.pop(ctx);
-              _showReadNoteDialog(note.copyWith(isOpened: true));
-            },
-            child: const Text('Şimdi Aç (Önizle)', style: TextStyle(color: AppColors.secondary, fontSize: 12)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('close'))),
+          if (isAuthor)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showReadNoteDialog(note);
+              },
+              child: Text(_t.text('capsule_preview'), style: const TextStyle(color: AppColors.secondary, fontSize: 12)),
+            ),
         ],
       ),
     );
@@ -820,8 +837,8 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Yazan: ${note.senderName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
-                  Text(DateFormat('d MMMM yyyy').format(note.createdAt), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  Text(_t.textf('note_written_by', {'name': note.senderName}), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
+                  Text(DateFormat('d MMMM yyyy', _lang).format(note.createdAt), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 ],
               ),
               const Divider(height: 20),
@@ -833,7 +850,7 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
           ),
         ),
         actions: [
-          ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Kapat')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('close'))),
         ],
       ),
     );
