@@ -1,90 +1,89 @@
-# ÇiftApp (Couple App) 💕
+# Yanyana (ciftapp) 💕
 
-Modern, zarif ve çiftler için özel olarak tasarlanmış mobil ilişki asistanı uygulaması (Flutter).
+Uzak mesafede ya da aynı evde yaşayan çiftler için ortak alan uygulaması (Flutter).
+İki partner bir davet koduyla eşleşir; anılar, planlar, hayaller, notlar ve
+cevaplar Firebase üzerinden gerçek zamanlı paylaşılır.
 
-Hem **Uzak Mesafe İlişkisi (Long Distance)** yaşayan hem de **Birlikte Yaşayan (Co-Living)** çiftlerin günlük iletişimini, anılarını, planlarını ve sevgilerini canlı tutmak için geliştirilmiştir.
+## Özellikler
 
----
+- **Eşleşme:** `CFT-XXXXXX` davet kodu, paylaşılabilir davet bağlantısı (`docs/davet.html`)
+- **Uzak mesafe modu:** çift saat (IANA saat dilimi, partnerden otomatik), buluşma geri sayımı,
+  "Seni düşünüyorum" sinyali (partnere push bildirimi)
+- **Birlikte yaşıyoruz modu:** ortak takvim, görevler ve alışveriş listesi
+- **Anı defteri:** çoklu fotoğraf, ruh hali, konum, etiket, favoriler; sayaçlar
+- **Hayaller ve aşk kapsülü:** hayal listesi, tarihe kadar kilitli zaman kapsülü notları
+- **Birlikte:** günün sorusu (iki taraf cevaplayınca açılır), "Beni ne kadar tanıyorsun?",
+  "Hangimiz daha...?" paketleri, ortak izleme listesi
+- **Premium (RevenueCat):** aylık/yıllık abonelik, "1 üyelik = 2 kişi"
+- **TR / EN** dil desteği, karanlık mod
 
-## ✨ Özellikler
+### Ücretsiz / Premium
 
-### 1. 👫 Çift Modları (Tek Tıkla Geçiş)
-- **Uzak Mesafe Modu (Long Distance):**
-  - İki şehir/ülke arası çift saat göstergesi (Dual Time Zone).
-  - Bir sonraki buluşma geri sayım sayacı ("Büyük Buluşma ✈️").
-  - "Seni Düşünüyorum" anlık titreşim/dokunma pulsası.
-- **Birlikte Yaşıyoruz Modu (Co-Living):**
-  - Ortak ev işleri ve görev paylaşımı (Temizlik, yemek, faturalar).
-  - Ortak market ve alışveriş listesi (Anlık işaretlenebilir).
-  - Ev bütçesi ve günün planı.
+Sınırlar `lib/core/premium/limits.dart` içinde tek yerden yönetilir ve aynı anahtar
+adlarıyla Firebase Remote Config'ten değiştirilebilir.
 
-### 2. 🚀 3 Adımlı Sadeleştirilmiş Kurulum (Onboarding)
-- **1. Adım:** Kullanıcının adı veya takma adı ("Seni nasıl çağıralım?").
-- **2. Adım:** Birlikte olmaya başlama tarihi ("Ne zamandır birliktesiniz? 💍") ve canlı gün sayacı.
-- **3. Adım:** Çift alanı kurulumu ("Partnerimin kodu var 🔑" veya "Yeni alan başlat ✨").
+| Özellik | Ücretsiz | Premium |
+|---|---|---|
+| Anılar | 20 anı, anı başına 3 foto | Sınırsız, anı başına 20 foto |
+| Seni düşünüyorum | Günde 5 | Sınırsız |
+| Zaman kapsülü | Ayda 1 | Sınırsız |
+| Soru paketleri | Başlangıç paketleri | Tüm paketler |
+| Günün sorusu arşivi | Son 7 gün | Son 1 yıl |
 
-### 3. 📸 Genişletilmiş Anı Defteri (Memory Book)
-- Anılara **birden fazla fotoğraf** ekleme desteği.
-- Fotoğraflara tıklandığında açılan tam ekran kaydırılabilir galeri (`MemoryDetailScreen`), küçük resim önizleme çubuğu ve fotoğraf sayacı.
-- Duygu durumu (Mood) rozetleri, konum etiketleri ve romantik notlar.
+## Mimari
 
-### 4. 🎮 Birlikte Vakit Geçirme & Oyunlar
-- **Günün Sorusu (Daily Question):** Her iki taraf da cevap verene kadar yanıtlar kilitli kalır.
-- **Hangimiz Daha...? (Who's More Likely To...?):** Çiftler birbirlerini oylar, uyum yüzdesi anlık hesaplanır.
-- **Beni Ne Kadar Tanıyorsun?** Çift bilgi yarışması.
-- **Ortak İzleme Listesi:** Beraber izlenecek film ve diziler.
+- `lib/core/services/couple_sync_service.dart` — eşleşme, çift belgesi, davet kodları
+- `lib/core/services/couple_data_store.dart` + `synced_list.dart` — `couples/{id}/{koleksiyon}`
+  senkronu, yerel önbellek (çevrimdışı açılış)
+- `lib/core/providers/` — Provider tabanlı durum; içerik provider'ları aktif çift alanına
+  `ChangeNotifierProxyProvider` ile bağlanır
+- `lib/core/services/purchase_service.dart` — RevenueCat (`PurchaseGateway` arayüzü)
+- `functions/` — Cloud Functions: RevenueCat webhook (çift premium'u), push bildirimleri,
+  zaman kapsülü bildirimi, silinen kullanıcı temizliği
+- `firestore.rules`, `storage.rules` — yalnızca çift üyeleri erişebilir
 
-### 5. 💬 Çift Sohbeti & Sürprizler
-- Zengin mesajlaşma (Metin, ses dalgası, fotoğraflar).
-- **Zaman Kilitli Sürpriz Mesajlar:** Belirlenen tarihe kadar açılamayan gizemli aşk mektupları.
+### Firestore yapısı
 
-### 6. 💎 ÇiftApp Premium & Paywall
-- Apple App Store & Google Play uyumlu 7 günlük ücretsiz denemeli abonelik ekranı.
-- Çiftler için sınırsız anı saklama, sesli notlar ve özel temalar.
+```
+invites/{davetKodu}        { coupleId, ownerId, ownerName }
+couples/{coupleId}         { memberIds[1..2], user1/2 Id+Name, tokens{uid}, langs{uid}, tz{uid},
+                             mode, startDate, reunionDate, premiumUntil (yalnızca sunucu) }
+couples/{coupleId}/memories|countdowns|events|tasks|shopping|bucket|notes|watchlist/{id}
+couples/{coupleId}/answers|quiz|whoMore/{soruId}   { <uid>: cevap }
+users/{uid}                { premiumUntil }   (yalnızca sunucu yazar)
+```
 
----
+## Geliştirme
 
-## 🛠️ Teknoloji Yığını
-
-- **Framework:** Flutter 3.x (Dart)
-- **State Management:** Provider (`MultiProvider`, `ChangeNotifier`)
-- **Tasarım & UI:** Özel Rose/Coral tema paleti (`#E25B6C`), Google Fonts (Poppins, Plus Jakarta Sans)
-- **Lokalizasyon:** Türkçe (TR) ve İngilizce (EN) tam dil desteği
-- **Yerel Depolama:** `shared_preferences`
-- **Çoklu Ortam & Paylaşım:** `image_picker`, `share_plus`
-- **Mimari:** Feature-first, temiz katmanlı mimari (Core / Features / Services)
-
----
-
-## 🚀 Başlarken
-
-### Gereksinimler
-- Flutter SDK 3.24+
-- iOS Simulator (macOS / Xcode) veya Android Emulator
-
-### Kurulum Adımları
 ```bash
-# Depoyu klonlayın
-git clone https://github.com/sudekazan/ciftapp.git
-cd ciftapp
-
-# Bağımlılıkları yükleyin
 flutter pub get
-
-# iOS Pods kurulumu (macOS için)
 cd ios && pod install && cd ..
-
-# Uygulamayı başlatın
 flutter run
-```
 
-### Testleri Çalıştırma
-```bash
-flutter test
 flutter analyze
+flutter test                      # birim + widget testleri
+cd functions && npm test          # Cloud Functions yardımcı testleri
+cd security-tests && npm install && npm test   # güvenlik kuralları (emülatör, JDK 21+)
 ```
 
----
+## Yayın öncesi kurulum (bir kez)
 
-## 📄 Lisans
+1. **Firebase kuralları ve index'ler:** `firebase deploy --only firestore,storage`
+2. **Cloud Functions** (Blaze planı gerekir):
+   ```bash
+   firebase functions:secrets:set REVENUECAT_WEBHOOK_AUTH   # webhook için rastgele bir değer
+   firebase functions:secrets:set REVENUECAT_SECRET_KEY     # RevenueCat > API keys > sk_...
+   firebase deploy --only functions
+   ```
+3. **RevenueCat:** Integrations > Webhooks → URL: `rcWebhook` fonksiyonunun adresi,
+   Authorization: `REVENUECAT_WEBHOOK_AUTH` değeri. Ürünler `premium` entitlement'ına bağlı,
+   `default` offering'de monthly/annual paketleri olmalı.
+4. **iOS push:** Apple Developer'da APNs Authentication Key oluşturup Firebase Console >
+   Project settings > Cloud Messaging'e yükleyin. (Push yetkisi `ios/Runner/Runner.entitlements`.)
+5. **App Check** (önerilir): Firebase Console'dan Firestore/Storage için App Check'i açın.
+6. **Davet sayfası:** App Store'da yayınlandıktan sonra `docs/davet.html` içindeki
+   `APP_STORE_ID` değerini girin.
+
+## Lisans
+
 Bu proje özel mülkiyet altındadır. Tüm hakları saklıdır.
