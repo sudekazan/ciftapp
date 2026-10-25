@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/relationship_mode.dart';
@@ -43,6 +44,35 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// The user's own store subscription (plan, renewal date, manage link).
   PremiumStatus? get subscription => _subscription;
+
+  // Premium = own subscription OR the couple's shared premium, which the
+  // backend writes to couples/{id}.premiumUntil when either partner pays.
+  bool _ownPremium = false;
+  DateTime? _couplePremiumUntil;
+  String? _couplePremiumOwner;
+
+  bool get _couplePremiumActive =>
+      _couplePremiumUntil != null && _couplePremiumUntil!.isAfter(DateTime.now());
+
+  /// Premium unlocked by the partner's subscription ("1 subscription = 2 users").
+  bool get isPremiumFromPartner =>
+      !_ownPremium && _couplePremiumActive && _couplePremiumOwner != _sync.currentUid;
+
+  static DateTime? _parseTime(Object? value) => switch (value) {
+        Timestamp t => t.toDate(),
+        DateTime d => d,
+        int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+        String s => DateTime.tryParse(s),
+        _ => null,
+      };
+
+  void _refreshPremiumFlag() {
+    final premium = _ownPremium || _couplePremiumActive;
+    if (premium != _currentUser.isPremium) {
+      _currentUser = _currentUser.copyWith(isPremium: premium);
+      notifyListeners();
+    }
+  }
 
   /// Incremented when the user leaves a couple or deletes the account, telling
   /// content providers to drop their cache instead of carrying it over.
@@ -95,6 +125,19 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     }));
   }
 
+  /// Stores this device's FCM token and language so the backend can notify
+  /// this user in their language.
+  void _publishPushTarget() {
+    final coupleId = _coupleId;
+    final uid = _sync.currentUid;
+    if (coupleId == null || uid == null) return;
+    final token = NotificationService.instance.fcmToken;
+    unawaited(_sync.updateCouple(coupleId, {
+      if (token != null) 'tokens.$uid': token,
+      'langs.$uid': _currentLanguage,
+    }));
+  }
+
   /// Pushes shared couple settings to the partner.
   void _pushCoupleFields(Map<String, dynamic> fields) {
     final coupleId = _coupleId;
@@ -104,7 +147,10 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The zone may change while travelling; refresh it when the app returns.
-    if (state == AppLifecycleState.resumed) _publishMyTimeZone();
+    if (state == AppLifecycleState.resumed) {
+      _publishMyTimeZone();
+      _refreshPremiumFlag(); // the shared premium may have expired meanwhile
+    }
   }
 
   AppStateProvider({CoupleSyncService? sync, CoupleDataStore? data, PurchaseGateway? purchases})
@@ -116,6 +162,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {
       // No binding (plain unit tests): lifecycle refresh is not needed.
     }
+    NotificationService.instance.onTokenChanged = (_) => _publishPushTarget();
     _initDefaultUser();
     _loadFromPreferences();
   }
@@ -174,6 +221,8 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       final partnerName = prefs.getString('ciftapp_partner_name');
       final userName = prefs.getString('ciftapp_user_name');
       final isPrem = prefs.getBool('ciftapp_is_premium') ?? false;
+      _ownPremium = isPrem;
+      _couplePremiumUntil = DateTime.tryParse(prefs.getString('ciftapp_couple_premium_until') ?? '');
       _hasCompletedSetup = prefs.getBool('ciftapp_setup_completed') ?? false;
       _partnerUtcOffsetMinutes = prefs.getInt('ciftapp_partner_utc_offset_min');
       _partnerTimeZoneName = prefs.getString('ciftapp_partner_tz_name');
@@ -209,7 +258,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
             : RelationshipMode.longDistance,
         isPaired: isPaired,
         partnerName: partnerName,
-        isPremium: isPrem,
+        isPremium: isPrem || _couplePremiumActive,
         relationshipStartDate: startDate ?? _currentUser.relationshipStartDate,
         nextReunionDate: reunionDate ?? _currentUser.nextReunionDate,
         reunionLocation: reunionLoc ?? _currentUser.reunionLocation,
@@ -270,8 +319,8 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       onUpdate: _onCoupleUpdate,
     );
 
-    NotificationService.instance.subscribeToCouple(_coupleId!);
     _publishMyTimeZone();
+    _publishPushTarget();
 
     final uid = _sync.currentUid;
     if (uid != null && !_purchasesLoggedIn && _purchases.isConfigured) {
@@ -310,6 +359,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     await _applySharedSettings(data, partnerId);
+    await _applyCouplePremium(data);
 
     // Alone in this space (new user or partner left): keep the invite code
     // pointing here so a partner can join.
@@ -504,6 +554,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> setLanguage(String langCode) async {
     _currentLanguage = langCode;
     notifyListeners();
+    _publishPushTarget();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('ciftapp_language', langCode);
   }
@@ -555,7 +606,6 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     final result = await _pairOrThrow(code, _currentUser.name);
     _coupleSubscription?.cancel();
     if (_coupleId != null && _coupleId != result.coupleId) {
-      NotificationService.instance.unsubscribeFromCouple(_coupleId!);
       // Content moves to the partner's space; the old solo space is purged
       // with the account later (its photo URLs are still referenced).
       await _rememberPreviousCouple(_coupleId!);
@@ -588,7 +638,6 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     _coupleSubscription?.cancel();
     final oldCoupleId = _coupleId;
     if (oldCoupleId != null) {
-      NotificationService.instance.unsubscribeFromCouple(oldCoupleId);
       await _sync.leaveCouple(oldCoupleId);
     }
     _coupleId = null;
@@ -596,6 +645,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     _dataGeneration++;
     _partnerTimeZoneName = null;
     _partnerPublishedOffset = null;
+    _clearCouplePremium();
 
     _currentUser = _currentUser.copyWith(
       isPaired: false,
@@ -608,6 +658,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     await prefs.remove('ciftapp_partner_name');
     await prefs.remove('ciftapp_couple_id');
     await prefs.remove('ciftapp_partner_tz_name');
+    await prefs.remove('ciftapp_couple_premium_until');
 
     await _createOwnSpace();
   }
@@ -635,8 +686,9 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _applyPremiumStatus(PremiumStatus status) async {
     _subscription = status;
-    final changed = status.isActive != _currentUser.isPremium;
-    if (changed) _currentUser = _currentUser.copyWith(isPremium: status.isActive);
+    final changed = status.isActive != _ownPremium;
+    _ownPremium = status.isActive;
+    _refreshPremiumFlag();
     notifyListeners();
     if (changed) {
       final prefs = await SharedPreferences.getInstance();
@@ -646,10 +698,32 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Called right after a successful purchase or restore.
   Future<void> upgradeToPremium() async {
-    _currentUser = _currentUser.copyWith(isPremium: true);
-    notifyListeners();
+    _ownPremium = true;
+    _refreshPremiumFlag();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('ciftapp_is_premium', true);
+  }
+
+  Future<void> _applyCouplePremium(Map<String, dynamic> data) async {
+    final until = _parseTime(data['premiumUntil']);
+    final owner = data['premiumOwner'] as String?;
+    if (until == _couplePremiumUntil && owner == _couplePremiumOwner) return;
+    _couplePremiumUntil = until;
+    _couplePremiumOwner = owner;
+    _refreshPremiumFlag();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (until == null) {
+      await prefs.remove('ciftapp_couple_premium_until');
+    } else {
+      await prefs.setString('ciftapp_couple_premium_until', until.toIso8601String());
+    }
+  }
+
+  void _clearCouplePremium() {
+    _couplePremiumUntil = null;
+    _couplePremiumOwner = null;
+    _refreshPremiumFlag();
   }
 
   /// Deletes the account and its cloud data (Apple 5.1.1(v), KVKK).
@@ -665,7 +739,6 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     final coupleId = _coupleId;
 
     if (coupleId != null) {
-      NotificationService.instance.unsubscribeFromCouple(coupleId);
       if (await _sync.memberCount(coupleId) > 1) {
         if (myUid != null) {
           for (final collection in const ['answers', 'quiz', 'whoMore']) {
@@ -688,6 +761,9 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _purchases.logOut();
     _purchasesLoggedIn = false;
     _subscription = null;
+    _ownPremium = false;
+    _couplePremiumUntil = null;
+    _couplePremiumOwner = null;
     await _sync.deleteCurrentUser();
 
     _coupleId = null;

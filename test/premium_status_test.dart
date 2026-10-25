@@ -1,4 +1,5 @@
 import 'package:ciftapp/core/providers/app_state_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:ciftapp/core/services/purchase_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,5 +67,72 @@ void main() {
 
     await state.deleteAccount();
     expect(purchases.logOuts, 1);
+  });
+
+  group('shared couple premium', () {
+    late FakeCoupleSyncService sync;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      sync = FakeCoupleSyncService(uid: 'partner');
+      sync.couples['cpl_p'] = {
+        'user1Id': 'partner',
+        'user1Name': 'Ayşe',
+        'user2Id': null,
+        'user2Name': null,
+        'memberIds': ['partner'],
+      };
+      sync.invites['CFT-ABCDEF'] = {'coupleId': 'cpl_p', 'ownerId': 'partner', 'ownerName': 'Ayşe'};
+      sync.uid = 'me';
+    });
+
+    test("the partner's subscription unlocks premium for both", () async {
+      final state = build(FakePurchaseGateway(status: PremiumStatus.inactive), sync: sync);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+      expect(state.currentUser.isPremium, isFalse);
+
+      sync.remoteUpdate('cpl_p', {
+        'premiumUntil': Timestamp.fromDate(DateTime.now().add(const Duration(days: 30))),
+        'premiumOwner': 'partner',
+      });
+      await settle();
+      expect(state.currentUser.isPremium, isTrue);
+      expect(state.isPremiumFromPartner, isTrue);
+
+      // Leaving the couple ends the shared premium.
+      await state.unpairCouple();
+      await settle();
+      expect(state.currentUser.isPremium, isFalse);
+    });
+
+    test('an expired shared premium does not unlock anything', () async {
+      final state = build(FakePurchaseGateway(status: PremiumStatus.inactive), sync: sync);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      sync.remoteUpdate('cpl_p', {
+        'premiumUntil': Timestamp.fromDate(DateTime.now().subtract(const Duration(days: 1))),
+        'premiumOwner': 'partner',
+      });
+      await settle();
+      expect(state.currentUser.isPremium, isFalse);
+    });
+
+    test('own subscription is not reported as coming from the partner', () async {
+      final state = build(
+        FakePurchaseGateway(status: const PremiumStatus(isActive: true)),
+        sync: sync,
+      );
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      sync.remoteUpdate('cpl_p', {
+        'premiumUntil': Timestamp.fromDate(DateTime.now().add(const Duration(days: 30))),
+        'premiumOwner': 'me',
+      });
+      await settle();
+      expect(state.currentUser.isPremium, isTrue);
+      expect(state.isPremiumFromPartner, isFalse);
+    });
   });
 }

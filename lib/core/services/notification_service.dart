@@ -23,6 +23,10 @@ class NotificationService {
   /// Callback when a foreground notification is received
   Function(RemoteMessage message)? onMessageReceived;
 
+  /// Called with the new token so it can be stored in the couple document
+  /// (Cloud Functions send pushes to the partner's token).
+  void Function(String token)? onTokenChanged;
+
   Future<void> init() async {
     if (Firebase.apps.isEmpty) {
       debugPrint('NotificationService: Firebase not initialized, skipping.');
@@ -52,6 +56,7 @@ class NotificationService {
       messaging.onTokenRefresh.listen((newToken) {
         _fcmToken = newToken;
         debugPrint('NotificationService: FCM Token refreshed: $newToken');
+        onTokenChanged?.call(newToken);
       });
 
       // Handle foreground notifications
@@ -66,30 +71,6 @@ class NotificationService {
       });
     } catch (e) {
       debugPrint('NotificationService: Init error: $e');
-    }
-  }
-
-  /// Subscribe to a couple-specific channel
-  Future<void> subscribeToCouple(String coupleId) async {
-    if (Firebase.apps.isEmpty) return;
-    try {
-      final safeTopic = 'couple_${coupleId.replaceAll(RegExp(r'[^a-zA-Z0-9-_.~%]'), '_')}';
-      await FirebaseMessaging.instance.subscribeToTopic(safeTopic);
-      debugPrint('NotificationService: Subscribed to topic $safeTopic');
-    } catch (e) {
-      debugPrint('NotificationService: Error subscribing to topic: $e');
-    }
-  }
-
-  /// Unsubscribe from couple topic
-  Future<void> unsubscribeFromCouple(String coupleId) async {
-    if (Firebase.apps.isEmpty) return;
-    try {
-      final safeTopic = 'couple_${coupleId.replaceAll(RegExp(r'[^a-zA-Z0-9-_.~%]'), '_')}';
-      await FirebaseMessaging.instance.unsubscribeFromTopic(safeTopic);
-      debugPrint('NotificationService: Unsubscribed from topic $safeTopic');
-    } catch (e) {
-      debugPrint('NotificationService: Error unsubscribing from topic: $e');
     }
   }
 }

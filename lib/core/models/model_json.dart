@@ -86,6 +86,8 @@ extension LoveNoteItemJson on LoveNoteItem {
         'colorHex': colorHex,
         'createdAt': createdAt.toIso8601String(),
         'unlockDate': unlockDate?.toIso8601String(),
+        // Absolute unlock time for the server-side "capsule opened" push.
+        'unlockAtMs': unlockDate?.millisecondsSinceEpoch,
         'isOpened': isOpened,
       };
 
