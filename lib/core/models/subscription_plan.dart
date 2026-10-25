@@ -1,72 +1,36 @@
-class SubscriptionPlan {
-  final String id;
-  final String titleTr;
-  final String titleEn;
-  final String priceTr;
-  final String priceEn;
-  final String periodTr;
-  final String periodEn;
-  final String? badgeTr;
-  final String? badgeEn;
-  final int trialDays;
-  final bool isFeatured;
+import 'package:flutter/material.dart';
+import '../localization/app_localizations.dart';
+import '../premium/limits.dart';
 
-  const SubscriptionPlan({
-    required this.id,
-    required this.titleTr,
-    required this.titleEn,
-    required this.priceTr,
-    required this.priceEn,
-    required this.periodTr,
-    required this.periodEn,
-    this.badgeTr,
-    this.badgeEn,
-    this.trialDays = 7,
-    this.isFeatured = false,
-  });
+/// A premium benefit shown on the paywall. Every entry must be a feature that
+/// actually works in the app (App Store 2.3.1 / 3.1.2, Google Play policy).
+class PremiumFeature {
+  final IconData icon;
+  final String title;
+  final String description;
 
-  String getTitle(String lang) => lang == 'en' ? titleEn : titleTr;
-  String getPrice(String lang) => lang == 'en' ? priceEn : priceTr;
-  String getPeriod(String lang) => lang == 'en' ? periodEn : periodTr;
-  String? getBadge(String lang) => lang == 'en' ? badgeEn : badgeTr;
-}
+  const PremiumFeature(this.icon, this.title, this.description);
 
-class PremiumFeatures {
-  static const List<Map<String, String>> features = [
-    {
-      'icon': 'infinite',
-      'title_tr': 'Sınırsız Fotoğraf & Medya',
-      'title_en': 'Unlimited Photos & Media',
-      'desc_tr': 'Tüm anılarınızı ve fotoğraflarınızı yüksek kalitede saklayın.',
-      'desc_en': 'Store all your memories and photos in high resolution.',
-    },
-    {
-      'icon': 'gamepad',
-      'title_tr': 'Tüm Çift Oyunları & Testler',
-      'title_en': 'All Couple Games & Quizzes',
-      'desc_tr': 'Birbirinizi daha iyi tanıyacağınız yüzlerce soru paketi.',
-      'desc_en': 'Hundreds of questions to deepen your connection.',
-    },
-    {
-      'icon': 'calendar',
-      'title_tr': 'Gelişmiş Takvim & Bütçe',
-      'title_en': 'Advanced Calendar & Budget',
-      'desc_tr': 'Ortak etkinliklerinizi ve harcamalarınızı kusursuz yönetin.',
-      'desc_en': 'Flawlessly manage your events and shared finances.',
-    },
-    {
-      'icon': 'book',
-      'title_tr': 'Yıllık Anı Kitabı Çıktısı',
-      'title_en': 'Annual Memory Book PDF Export',
-      'desc_tr': 'Yıl sonunda anılarınızdan oluşan dijital kitap oluşturun.',
-      'desc_en': 'Generate an elegant printable book of your shared year.',
-    },
-    {
-      'icon': 'heart',
-      'title_tr': '1 Üyelik = 2 Kişi',
-      'title_en': '1 Subscription = 2 Users',
-      'desc_tr': 'Tek bir partner öder, iki kişi de tüm ayrıcalıklardan yararlanır.',
-      'desc_en': 'One person pays, both partners enjoy full premium access.',
-    },
-  ];
+  static List<PremiumFeature> all(AppLocalizations l10n) => [
+        PremiumFeature(
+          Icons.photo_library_rounded,
+          l10n.text('premium_feat_memories_title'),
+          l10n.textf('premium_feat_memories_desc', {'m': Limits.premiumPhotosPerMemory}),
+        ),
+        PremiumFeature(
+          Icons.favorite_rounded,
+          l10n.text('premium_feat_love_title'),
+          l10n.text('premium_feat_love_desc'),
+        ),
+        PremiumFeature(
+          Icons.quiz_rounded,
+          l10n.text('premium_feat_questions_title'),
+          l10n.text('premium_feat_questions_desc'),
+        ),
+        PremiumFeature(
+          Icons.people_alt_rounded,
+          l10n.text('premium_feat_couple_title'),
+          l10n.text('premium_feat_couple_desc'),
+        ),
+      ];
 }

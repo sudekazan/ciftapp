@@ -3,17 +3,21 @@ import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_links.dart';
-import '../../../core/constants/revenuecat_constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/subscription_plan.dart';
 import '../../../core/premium/limits.dart';
+import '../../../core/premium/plan_pricing.dart';
 import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/services/purchase_service.dart';
 
+enum _OfferingsState { loading, loaded, failed }
+
 class PaywallScreen extends StatefulWidget {
   final PaywallSource source;
-  const PaywallScreen({super.key, this.source = PaywallSource.profile});
+  final PurchaseGateway? purchases;
+
+  const PaywallScreen({super.key, this.source = PaywallSource.profile, this.purchases});
 
   /// Explains which limit opened the paywall, or `null` for a plain paywall.
   static String? reasonText(AppLocalizations l10n, PaywallSource source) {
@@ -35,10 +39,16 @@ class PaywallScreen extends StatefulWidget {
 }
 
 class _PaywallScreenState extends State<PaywallScreen> {
-  int _selectedPlanIndex = 1; // Default to Yearly (Best Value)
+  late final PurchaseGateway _purchases = widget.purchases ?? PurchaseService.instance;
+
+  bool _yearlySelected = true; // Yearly is the main product.
   bool _isLoading = false;
+  _OfferingsState _offeringsState = _OfferingsState.loading;
   Package? _monthlyPackage;
   Package? _yearlyPackage;
+  final Map<String, int?> _trialDays = {};
+
+  Package? get _selectedPackage => _yearlySelected ? _yearlyPackage : _monthlyPackage;
 
   @override
   void initState() {
@@ -47,47 +57,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _loadOfferings() async {
-    if (!RevenueCatConstants.isConfigured) return;
-    try {
-      final offerings = await PurchaseService.instance.getOfferings();
-      if (offerings != null && offerings.current != null) {
-        if (!mounted) return;
-        setState(() {
-          _monthlyPackage = offerings.current!.monthly;
-          _yearlyPackage = offerings.current!.annual;
-        });
-      }
-    } catch (e) {
-      debugPrint('PaywallScreen: error loading offerings: $e');
+    setState(() => _offeringsState = _OfferingsState.loading);
+    final current = _purchases.isConfigured ? (await _purchases.getOfferings())?.current : null;
+    final monthly = current?.monthly;
+    final yearly = current?.annual;
+    // Trial text depends on whether this user can still get the trial.
+    for (final package in [monthly, yearly].whereType<Package>()) {
+      _trialDays[package.identifier] = await _purchases.eligibleTrialDays(package);
     }
+    if (!mounted) return;
+    setState(() {
+      _monthlyPackage = monthly;
+      _yearlyPackage = yearly;
+      _offeringsState =
+          monthly == null && yearly == null ? _OfferingsState.failed : _OfferingsState.loaded;
+      if (yearly == null) _yearlySelected = false;
+    });
   }
-
-  final List<SubscriptionPlan> _plans = const [
-    SubscriptionPlan(
-      id: 'yanyana_monthly',
-      titleTr: 'Aylık Üyelik',
-      titleEn: 'Monthly Plan',
-      priceTr: '₺79,99 / Ay',
-      priceEn: '\$4.99 / Month',
-      periodTr: 'Her ay yenilenir',
-      periodEn: 'Renews monthly',
-      trialDays: 7,
-      isFeatured: false,
-    ),
-    SubscriptionPlan(
-      id: 'yanyana_yearly',
-      titleTr: 'Yıllık Üyelik (En Popüler)',
-      titleEn: 'Annual Plan (Best Value)',
-      priceTr: '₺599,99 / Yıl',
-      priceEn: '\$39.99 / Year',
-      periodTr: 'Aylık sadece ₺49,99\'a gelir (%38 Tasarruf)',
-      periodEn: 'Only \$3.33 / month (Save 38%)',
-      badgeTr: '%38 İNDİRİMLİ',
-      badgeEn: 'SAVE 38%',
-      trialDays: 7,
-      isFeatured: true,
-    ),
-  ];
 
   void _showMessage(String text, {Color color = Colors.redAccent}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -100,12 +86,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final l10n = AppLocalizations.of(context);
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
-    if (!RevenueCatConstants.isConfigured) {
-      _showMessage(l10n.text('purchase_err_notConfigured'), color: Colors.orange);
-      return;
-    }
-
-    final selectedPackage = _selectedPlanIndex == 1 ? _yearlyPackage : _monthlyPackage;
+    final selectedPackage = _selectedPackage;
     if (selectedPackage == null) {
       _showMessage(l10n.text('offerings_unavailable'));
       return;
@@ -114,7 +95,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final outcome = await PurchaseService.instance.purchase(selectedPackage);
+      final outcome = await _purchases.purchase(selectedPackage);
       if (!mounted) return;
 
       switch (outcome) {
@@ -152,15 +133,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final l10n = AppLocalizations.of(context);
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
-    if (!RevenueCatConstants.isConfigured) {
-      _showMessage(l10n.text('purchase_err_notConfigured'), color: Colors.orange);
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
-      final isRestored = await PurchaseService.instance.restore();
+      final isRestored = await _purchases.restore();
       if (!mounted) return;
 
       if (isRestored) {
@@ -183,7 +159,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final lang = appState.currentLanguage;
+    final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final selected = _selectedPackage;
+    final trialDays = selected == null ? null : _trialDays[selected.identifier];
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFFBFBFE),
@@ -197,10 +175,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             onPressed: _isLoading ? null : _handleRestore,
             child: Text(
               l10n.text('restore_purchases'),
-              style: TextStyle(
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: secondaryText, fontSize: 12),
             ),
           ),
           const SizedBox(width: 8),
@@ -260,7 +235,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ],
             const SizedBox(height: 24),
 
-            // Feature List Cards
+            // Feature list: only features that really work in the app.
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -269,10 +244,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 border: Border.all(color: isDark ? AppColors.darkDivider : AppColors.divider),
               ),
               child: Column(
-                children: PremiumFeatures.features.map((f) {
-                  final title = lang == 'en' ? f['title_en']! : f['title_tr']!;
-                  final desc = lang == 'en' ? f['desc_en']! : f['desc_tr']!;
-
+                children: PremiumFeature.all(l10n).map((f) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
@@ -284,24 +256,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             color: AppColors.primarySoft,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.check_rounded, color: AppColors.primary, size: 16),
+                          child: Icon(f.icon, color: AppColors.primary, size: 16),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                title,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-                              ),
-                              Text(
-                                desc,
-                                style: TextStyle(
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                  fontSize: 11.5,
-                                ),
-                              ),
+                              Text(f.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                              Text(f.description, style: TextStyle(color: secondaryText, fontSize: 11.5)),
                             ],
                           ),
                         ),
@@ -314,130 +277,41 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
             const SizedBox(height: 24),
 
-            // Plan Selector (Monthly vs Yearly)
-            ..._plans.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final plan = entry.value;
-              final isSelected = _selectedPlanIndex == idx;
-
-              return GestureDetector(
-                onTap: () => setState(() => _selectedPlanIndex = idx),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.3) : AppColors.primarySoft)
-                        : (isDark ? AppColors.darkCardBg : Colors.white),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : (isDark ? AppColors.darkDivider : AppColors.divider),
-                      width: isSelected ? 2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                        color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  plan.getTitle(lang),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: isSelected ? AppColors.primary : null,
-                                  ),
-                                ),
-                                if (plan.getBadge(lang) != null) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accentGold,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      plan.getBadge(lang)!,
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              plan.getPeriod(lang),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Builder(builder: (_) {
-                        String displayPrice = plan.getPrice(lang);
-                        if (idx == 0 && _monthlyPackage != null) {
-                          displayPrice = '${_monthlyPackage!.storeProduct.priceString} / ${lang == 'en' ? 'Month' : 'Ay'}';
-                        } else if (idx == 1 && _yearlyPackage != null) {
-                          displayPrice = '${_yearlyPackage!.storeProduct.priceString} / ${lang == 'en' ? 'Year' : 'Yıl'}';
-                        }
-                        return Text(
-                          displayPrice,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              );
-            }),
+            ..._buildPlans(l10n, appState.currentLanguage, isDark, secondaryText),
 
             const SizedBox(height: 18),
 
-            // Start Trial Button
             ElevatedButton(
-              onPressed: _isLoading ? null : _handlePurchase,
+              onPressed: _isLoading || selected == null ? null : _handlePurchase,
               child: _isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : Text(l10n.text('start_trial_btn')),
+                  : Text(trialDays != null
+                      ? l10n.textf('start_trial_btn', {'n': trialDays})
+                      : l10n.text('subscribe_btn')),
             ),
             const SizedBox(height: 12),
 
-            // Transparent Trial Disclosure (Apple & Google Play Policy requirement)
-            Text(
-              l10n.text('trial_info'),
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                height: 1.4,
+            // Transparent trial disclosure, only for users who can still get it
+            // (Apple & Google Play policy requirement).
+            if (trialDays != null && selected != null) ...[
+              Text(
+                l10n.textf('trial_info', {
+                  'n': trialDays,
+                  'price': '${selected.storeProduct.priceString} / '
+                      '${l10n.text(_yearlySelected ? 'per_year' : 'per_month')}',
+                }),
+                style: TextStyle(fontSize: 11, color: secondaryText, height: 1.4),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
+              const SizedBox(height: 6),
+            ],
             Text(
               l10n.text('auto_renew_info'),
-              style: TextStyle(
-                fontSize: 10.5,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                height: 1.4,
-              ),
+              style: TextStyle(fontSize: 10.5, color: secondaryText, height: 1.4),
               textAlign: TextAlign.center,
             ),
             Row(
@@ -456,6 +330,148 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildPlans(AppLocalizations l10n, String lang, bool isDark, Color secondaryText) {
+    switch (_offeringsState) {
+      case _OfferingsState.loading:
+        return [
+          const SizedBox(height: 12),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 10),
+          Text(l10n.text('offerings_loading'), style: TextStyle(color: secondaryText, fontSize: 12)),
+        ];
+      case _OfferingsState.failed:
+        return [
+          Text(
+            l10n.text('offerings_unavailable'),
+            style: TextStyle(color: secondaryText, fontSize: 12.5),
+            textAlign: TextAlign.center,
+          ),
+          TextButton.icon(
+            onPressed: _loadOfferings,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(l10n.text('retry')),
+          ),
+        ];
+      case _OfferingsState.loaded:
+        final monthly = _monthlyPackage;
+        final yearly = _yearlyPackage;
+        final savings = monthly != null && yearly != null
+            ? PlanPricing.savingsPercent(
+                monthlyPrice: monthly.storeProduct.price,
+                yearlyPrice: yearly.storeProduct.price,
+              )
+            : null;
+        return [
+          if (yearly != null)
+            _planTile(
+              isSelected: _yearlySelected,
+              onTap: () => setState(() => _yearlySelected = true),
+              title: l10n.text('yearly_plan'),
+              badge: savings == null ? null : l10n.textf('plan_savings_badge', {'p': savings}),
+              detail: () {
+                final perMonth = PlanPricing.monthlyEquivalent(
+                  yearlyPrice: yearly.storeProduct.price,
+                  currencyCode: yearly.storeProduct.currencyCode,
+                  locale: lang,
+                );
+                return savings == null
+                    ? l10n.textf('plan_yearly_detail', {'price': perMonth})
+                    : l10n.textf('plan_yearly_detail_savings', {'price': perMonth, 'p': savings});
+              }(),
+              price: '${yearly.storeProduct.priceString} / ${l10n.text('per_year')}',
+              isDark: isDark,
+              secondaryText: secondaryText,
+            ),
+          if (monthly != null)
+            _planTile(
+              isSelected: !_yearlySelected,
+              onTap: () => setState(() => _yearlySelected = false),
+              title: l10n.text('monthly_plan'),
+              detail: l10n.text('plan_renews_monthly'),
+              price: '${monthly.storeProduct.priceString} / ${l10n.text('per_month')}',
+              isDark: isDark,
+              secondaryText: secondaryText,
+            ),
+        ];
+    }
+  }
+
+  Widget _planTile({
+    required bool isSelected,
+    required VoidCallback onTap,
+    required String title,
+    required String detail,
+    required String price,
+    required bool isDark,
+    required Color secondaryText,
+    String? badge,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppColors.primaryDark.withValues(alpha: 0.3) : AppColors.primarySoft)
+              : (isDark ? AppColors.darkCardBg : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : (isDark ? AppColors.darkDivider : AppColors.divider),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: isSelected ? AppColors.primary : null,
+                        ),
+                      ),
+                      if (badge != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentGold,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            badge,
+                            style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(detail, style: TextStyle(fontSize: 11, color: secondaryText)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(price, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
           ],
         ),
       ),

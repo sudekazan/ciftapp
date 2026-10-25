@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../features/premium/screens/paywall_screen.dart';
+import '../../features/premium/screens/subscription_screen.dart';
 import '../providers/app_state_provider.dart';
 
 /// Where a paywall was opened from; used for the contextual headline and
@@ -36,9 +37,12 @@ class PremiumGate {
     return context.mounted && isPremium(context);
   }
 
+  /// Opens the paywall, or the "My subscription" screen for premium users.
   static Future<void> openPaywall(BuildContext context, PaywallSource source) {
     return Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PaywallScreen(source: source)),
+      MaterialPageRoute(
+        builder: (_) => isPremium(context) ? const SubscriptionScreen() : PaywallScreen(source: source),
+      ),
     );
   }
 }

@@ -758,7 +758,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
             features: [
               'Ortak ev işleri ve görev paylaşımı (Temizlik, yemek vb.)',
               'Canlı ortak market & alışveriş listesi',
-              'Günün planı ve ev bütçesi takibi',
+              'Ortak takvim ve günün planı',
             ],
             icon: Icons.home_rounded,
             theme: theme,

@@ -10,7 +10,7 @@ import '../../../core/providers/memories_provider.dart';
 import '../../../core/providers/plans_provider.dart';
 import '../../../core/providers/together_provider.dart';
 import '../../auth/screens/pairing_screen.dart';
-import '../../premium/screens/paywall_screen.dart';
+import '../../../core/premium/premium_gate.dart';
 import 'mode_switch_sheet.dart';
 import 'privacy_policy_sheet.dart';
 
@@ -256,11 +256,7 @@ class ProfileSettingsScreen extends StatelessWidget {
 
           // Premium Banner
           GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PaywallScreen()),
-              );
-            },
+            onTap: () => PremiumGate.openPaywall(context, PaywallSource.profile),
             child: Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -289,7 +285,9 @@ class ProfileSettingsScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           user.isPremium
-                              ? l10n.text('feature_single_payment')
+                              ? (appState.isPremiumFromPartner
+                                  ? l10n.textf('subscription_from_partner', {'name': user.partnerName ?? 'Partner'})
+                                  : l10n.text('premium_feat_couple_desc'))
                               : l10n.text('premium_subtitle'),
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
                         ),

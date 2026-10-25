@@ -55,6 +55,9 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get _couplePremiumActive =>
       _couplePremiumUntil != null && _couplePremiumUntil!.isAfter(DateTime.now());
 
+  /// Until when the couple's shared premium is valid, if any.
+  DateTime? get couplePremiumUntil => _couplePremiumActive ? _couplePremiumUntil : null;
+
   /// Premium unlocked by the partner's subscription ("1 subscription = 2 users").
   bool get isPremiumFromPartner =>
       !_ownPremium && _couplePremiumActive && _couplePremiumOwner != _sync.currentUid;
