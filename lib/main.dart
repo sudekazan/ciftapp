@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
@@ -43,6 +44,20 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('Firebase initialized successfully.');
+
+    // App Check: only genuine app builds can reach Firestore/Storage once
+    // enforcement is enabled in the console. Debug builds print a debug token
+    // to register in Firebase Console > App Check.
+    try {
+      await FirebaseAppCheck.instance.activate(
+        providerAndroid: kDebugMode ? const AndroidDebugProvider() : const AndroidPlayIntegrityProvider(),
+        providerApple: kDebugMode
+            ? const AppleDebugProvider()
+            : const AppleAppAttestWithDeviceCheckFallbackProvider(),
+      );
+    } catch (e) {
+      debugPrint('App Check activation error: $e');
+    }
 
     // Crash reporting (release builds only).
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);

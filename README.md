@@ -80,7 +80,9 @@ cd security-tests && npm install && npm test   # güvenlik kuralları (emülatö
    `default` offering'de monthly/annual paketleri olmalı.
 4. **iOS push:** Apple Developer'da APNs Authentication Key oluşturup Firebase Console >
    Project settings > Cloud Messaging'e yükleyin. (Push yetkisi `ios/Runner/Runner.entitlements`.)
-5. **App Check** (önerilir): Firebase Console'dan Firestore/Storage için App Check'i açın.
+5. **App Check:** Uygulama App Check'i başlatıyor (iOS: App Attest + DeviceCheck yedeği, Android: Play Integrity).
+   Firebase Console > App Check'te uygulamaları kaydedin, debug derlemenin loglarındaki debug token'ı ekleyin,
+   metrikler normal görünce Firestore, Storage ve Functions için **Enforce**'u açın.
 6. **Hesap yedekleme (Apple / Google ile giriş):**
    - Firebase Console > Authentication > Sign-in method: **Apple** ve **Google** sağlayıcılarını açın.
    - Apple Developer'da App ID için *Sign in with Apple* yetkisini açın (yetki `Runner.entitlements` içinde).
