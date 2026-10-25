@@ -96,7 +96,17 @@ class FakeCoupleSyncService implements CoupleSyncService {
 
   @override
   Future<void> updateCouple(String coupleId, Map<String, dynamic> fields) async {
-    couples[coupleId]?.addAll(fields);
+    final couple = couples[coupleId];
+    if (couple == null) return;
+    fields.forEach((key, value) {
+      // Firestore-style "a.b" field paths update nested maps.
+      final parts = key.split('.');
+      var target = couple;
+      for (final part in parts.take(parts.length - 1)) {
+        target = (target[part] ??= <String, dynamic>{}) as Map<String, dynamic>;
+      }
+      target[parts.last] = value;
+    });
     _emit(coupleId);
   }
 

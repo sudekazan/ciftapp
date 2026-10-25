@@ -18,6 +18,7 @@ import 'core/providers/together_provider.dart';
 import 'core/services/couple_data_store.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/purchase_service.dart';
+import 'core/services/time_zone_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/initial_setup_screen.dart';
 import 'features/main_navigation_screen.dart';
@@ -50,6 +51,8 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
   }
+
+  await TimeZoneService.init();
 
   // Initialize Notification Service (FCM & Alerts)
   await NotificationService.instance.init();

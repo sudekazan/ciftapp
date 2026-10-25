@@ -10,8 +10,9 @@ import '../models/user_model.dart';
 import '../services/couple_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
+import '../services/time_zone_service.dart';
 
-class AppStateProvider extends ChangeNotifier {
+class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   final CoupleSyncService _sync;
   late UserModel _currentUser;
   String _currentLanguage = 'tr';
@@ -21,6 +22,9 @@ class AppStateProvider extends ChangeNotifier {
   String? _coupleId;
   StreamSubscription? _coupleSubscription;
   bool _inviteEnsured = false;
+
+  /// 'user1' or 'user2': which name field of the couple document is mine.
+  String? _mySeat;
 
   UserModel get currentUser => _currentUser;
   String get currentLanguage => _currentLanguage;
@@ -35,11 +39,31 @@ class AppStateProvider extends ChangeNotifier {
   int _dataGeneration = 0;
   int get dataGeneration => _dataGeneration;
 
-  /// Partner's UTC offset in minutes. `null` = same as this device.
+  // Partner time zone: published automatically by the partner's device as an
+  // IANA name (DST-safe). The manual offset is only a fallback for partners on
+  // older app versions.
+  String? _partnerTimeZoneName;
+  int? _partnerPublishedOffset;
   int? _partnerUtcOffsetMinutes;
-  int get partnerUtcOffsetMinutes =>
-      _partnerUtcOffsetMinutes ?? DateTime.now().timeZoneOffset.inMinutes;
-  bool get hasPartnerTimeZone => _partnerUtcOffsetMinutes != null;
+
+  /// Partner's current UTC offset in minutes (this device's offset if unknown).
+  int get partnerUtcOffsetMinutes {
+    final name = _partnerTimeZoneName;
+    final fromName = name == null ? null : TimeZoneService.offsetMinutesFor(name);
+    return fromName ??
+        _partnerPublishedOffset ??
+        _partnerUtcOffsetMinutes ??
+        DateTime.now().timeZoneOffset.inMinutes;
+  }
+
+  bool get hasPartnerTimeZone =>
+      _partnerTimeZoneName != null || _partnerPublishedOffset != null || _partnerUtcOffsetMinutes != null;
+
+  /// Whether the partner's zone comes from their device (no manual choice needed).
+  bool get isPartnerTimeZoneAutomatic =>
+      _partnerTimeZoneName != null || _partnerPublishedOffset != null;
+
+  String? get partnerTimeZoneName => _partnerTimeZoneName;
 
   Future<void> setPartnerUtcOffset(int minutes) async {
     _partnerUtcOffsetMinutes = minutes;
@@ -48,8 +72,38 @@ class AppStateProvider extends ChangeNotifier {
     await prefs.setInt('ciftapp_partner_utc_offset_min', minutes);
   }
 
+  /// Shares this device's time zone with the partner.
+  void _publishMyTimeZone() {
+    final coupleId = _coupleId;
+    final uid = _sync.currentUid;
+    if (coupleId == null || uid == null) return;
+    unawaited(_sync.updateCouple(coupleId, {
+      'tz.$uid': {
+        'name': TimeZoneService.localName,
+        'offsetMinutes': DateTime.now().timeZoneOffset.inMinutes,
+      },
+    }));
+  }
+
+  /// Pushes shared couple settings to the partner.
+  void _pushCoupleFields(Map<String, dynamic> fields) {
+    final coupleId = _coupleId;
+    if (coupleId != null) unawaited(_sync.updateCouple(coupleId, fields));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The zone may change while travelling; refresh it when the app returns.
+    if (state == AppLifecycleState.resumed) _publishMyTimeZone();
+  }
+
   AppStateProvider({CoupleSyncService? sync})
       : _sync = sync ?? FirestoreCoupleSyncService.instance {
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (_) {
+      // No binding (plain unit tests): lifecycle refresh is not needed.
+    }
     _initDefaultUser();
     _loadFromPreferences();
   }
@@ -110,6 +164,7 @@ class AppStateProvider extends ChangeNotifier {
       final isPrem = prefs.getBool('ciftapp_is_premium') ?? false;
       _hasCompletedSetup = prefs.getBool('ciftapp_setup_completed') ?? false;
       _partnerUtcOffsetMinutes = prefs.getInt('ciftapp_partner_utc_offset_min');
+      _partnerTimeZoneName = prefs.getString('ciftapp_partner_tz_name');
       _coupleId = prefs.getString('ciftapp_couple_id');
 
       var inviteCode = prefs.getString('ciftapp_invite_code');
@@ -205,6 +260,7 @@ class AppStateProvider extends ChangeNotifier {
     );
 
     NotificationService.instance.subscribeToCouple(_coupleId!);
+    _publishMyTimeZone();
   }
 
   Future<void> _onCoupleUpdate(Map<String, dynamic> data) async {
@@ -213,6 +269,7 @@ class AppStateProvider extends ChangeNotifier {
     final members = List<String>.from(data['memberIds'] as List? ?? const []);
     if (!members.contains(myUid)) return;
 
+    _mySeat = data['user1Id'] == myUid ? 'user1' : 'user2';
     final partnerId = members.where((m) => m != myUid).firstOrNull;
     final partnerName = partnerId == null
         ? null
@@ -235,6 +292,8 @@ class AppStateProvider extends ChangeNotifier {
       }
     }
 
+    await _applySharedSettings(data, partnerId);
+
     // Alone in this space (new user or partner left): keep the invite code
     // pointing here so a partner can join.
     if (!paired && !_inviteEnsured) {
@@ -249,6 +308,56 @@ class AppStateProvider extends ChangeNotifier {
     // Live heartbeat / Thinking of You pulse
     final pulse = data['lastThinkingOfYou'];
     if (pulse is Map) await _handlePulse(Map<String, dynamic>.from(pulse), myUid);
+  }
+
+  /// Applies settings the partner may have changed: dates, mode, time zone.
+  Future<void> _applySharedSettings(Map<String, dynamic> data, String? partnerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    var user = _currentUser;
+
+    final startDate = DateTime.tryParse(data['startDate'] as String? ?? '');
+    if (startDate != null && startDate != user.relationshipStartDate) {
+      user = user.copyWith(relationshipStartDate: startDate);
+      await prefs.setString('ciftapp_start_date', startDate.toIso8601String());
+    }
+
+    final reunionDate = DateTime.tryParse(data['reunionDate'] as String? ?? '');
+    final reunionLocation = data['reunionLocation'] as String?;
+    if (reunionDate != null &&
+        (reunionDate != user.nextReunionDate || reunionLocation != user.reunionLocation)) {
+      user = user.copyWith(nextReunionDate: reunionDate, reunionLocation: reunionLocation);
+      await prefs.setString('ciftapp_reunion_date', reunionDate.toIso8601String());
+      await prefs.setString('ciftapp_reunion_loc', reunionLocation ?? '');
+    }
+
+    final modeId = data['mode'] as String?;
+    if (modeId != null && modeId != user.mode.id) {
+      user = user.copyWith(
+        mode: modeId == RelationshipMode.coLiving.id
+            ? RelationshipMode.coLiving
+            : RelationshipMode.longDistance,
+      );
+      await prefs.setString('ciftapp_mode', modeId);
+    }
+
+    var tzChanged = false;
+    final zones = data['tz'];
+    final partnerZone = partnerId != null && zones is Map ? zones[partnerId] : null;
+    if (partnerZone is Map) {
+      final name = partnerZone['name'] as String?;
+      final offset = (partnerZone['offsetMinutes'] as num?)?.toInt();
+      if (name != _partnerTimeZoneName || offset != _partnerPublishedOffset) {
+        _partnerTimeZoneName = name;
+        _partnerPublishedOffset = offset;
+        tzChanged = true;
+        if (name != null) await prefs.setString('ciftapp_partner_tz_name', name);
+      }
+    }
+
+    if (!identical(user, _currentUser) || tzChanged) {
+      _currentUser = user;
+      notifyListeners();
+    }
   }
 
   static const _lastPulseSeenKey = 'ciftapp_last_pulse_seen';
@@ -350,6 +459,7 @@ class AppStateProvider extends ChangeNotifier {
   Future<void> updateRelationshipStartDate(DateTime date) async {
     _currentUser = _currentUser.copyWith(relationshipStartDate: date);
     notifyListeners();
+    _pushCoupleFields({'startDate': date.toIso8601String()});
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('ciftapp_start_date', date.toIso8601String());
   }
@@ -357,6 +467,7 @@ class AppStateProvider extends ChangeNotifier {
   Future<void> updateUserName(String name) async {
     _currentUser = _currentUser.copyWith(name: name);
     notifyListeners();
+    if (_mySeat != null) _pushCoupleFields({'${_mySeat}Name': name});
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('ciftapp_user_name', name);
   }
@@ -367,6 +478,7 @@ class AppStateProvider extends ChangeNotifier {
       reunionLocation: location,
     );
     notifyListeners();
+    _pushCoupleFields({'reunionDate': date.toIso8601String(), 'reunionLocation': location});
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('ciftapp_reunion_date', date.toIso8601String());
     await prefs.setString('ciftapp_reunion_loc', location);
@@ -389,6 +501,7 @@ class AppStateProvider extends ChangeNotifier {
   Future<void> setRelationshipMode(RelationshipMode mode) async {
     _currentUser = _currentUser.copyWith(mode: mode);
     notifyListeners();
+    _pushCoupleFields({'mode': mode.id});
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('ciftapp_mode', mode.id);
   }
@@ -461,6 +574,8 @@ class AppStateProvider extends ChangeNotifier {
     _coupleId = null;
     _inviteEnsured = false;
     _dataGeneration++;
+    _partnerTimeZoneName = null;
+    _partnerPublishedOffset = null;
 
     _currentUser = _currentUser.copyWith(
       isPaired: false,
@@ -472,6 +587,7 @@ class AppStateProvider extends ChangeNotifier {
     await prefs.setBool('ciftapp_is_paired', false);
     await prefs.remove('ciftapp_partner_name');
     await prefs.remove('ciftapp_couple_id');
+    await prefs.remove('ciftapp_partner_tz_name');
 
     await _createOwnSpace();
   }
@@ -496,12 +612,18 @@ class AppStateProvider extends ChangeNotifier {
     _dataGeneration++;
     _hasCompletedSetup = false;
     _partnerUtcOffsetMinutes = null;
+    _partnerTimeZoneName = null;
+    _partnerPublishedOffset = null;
+    _mySeat = null;
     _initDefaultUser();
     notifyListeners();
   }
 
   @override
   void dispose() {
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
     _coupleSubscription?.cancel();
     super.dispose();
   }

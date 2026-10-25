@@ -189,7 +189,8 @@ class _DualClockCardState extends State<DualClockCard> {
               // Partner Location & Time
               Expanded(
                 child: GestureDetector(
-                onTap: () => _pickPartnerOffset(context, appState),
+                // Picked automatically from the partner's phone when available.
+                onTap: appState.isPartnerTimeZoneAutomatic ? null : () => _pickPartnerOffset(context, appState),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -214,7 +215,8 @@ class _DualClockCardState extends State<DualClockCard> {
                               style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          Icon(Icons.edit_rounded, size: 12, color: AppColors.textSecondary),
+                          if (!appState.isPartnerTimeZoneAutomatic)
+                            Icon(Icons.edit_rounded, size: 12, color: AppColors.textSecondary),
                         ],
                       ),
                       const SizedBox(height: 6),

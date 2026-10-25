@@ -196,5 +196,49 @@ void main() {
       await settle();
       expect(state.currentUser.lastThinkingOfYou, isNull);
     });
+  
+    test('dates, mode and time zone changed by the partner are applied', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      backend.remoteUpdate('cpl_p', {
+        'startDate': DateTime(2020, 2, 14).toIso8601String(),
+        'reunionDate': DateTime(2030, 6, 1).toIso8601String(),
+        'reunionLocation': 'Londra',
+        'mode': 'co_living',
+        'tz': {
+          'partner': {'name': 'Europe/London', 'offsetMinutes': 60},
+        },
+      });
+      await settle();
+
+      expect(state.currentUser.relationshipStartDate, DateTime(2020, 2, 14));
+      expect(state.currentUser.nextReunionDate, DateTime(2030, 6, 1));
+      expect(state.currentUser.reunionLocation, 'Londra');
+      expect(state.currentUser.mode, RelationshipMode.coLiving);
+      expect(state.isPartnerTimeZoneAutomatic, isTrue);
+      expect(state.partnerTimeZoneName, 'Europe/London');
+      // tz database is not loaded in unit tests, so the published offset is used.
+      expect(state.partnerUtcOffsetMinutes, 60);
+    });
+
+    test('local setting changes are pushed to the couple space', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      await state.updateReunion(date: DateTime(2031, 1, 1), location: 'Paris');
+      await state.setRelationshipMode(RelationshipMode.coLiving);
+      await state.updateUserName('Sude');
+      await settle();
+
+      final couple = backend.couples['cpl_p']!;
+      expect(couple['reunionLocation'], 'Paris');
+      expect(couple['mode'], 'co_living');
+      expect(couple['user2Name'], 'Sude');
+    });
   });
 }

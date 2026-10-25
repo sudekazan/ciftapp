@@ -51,6 +51,8 @@ dependencies:
   firebase_auth: 7.0.0
   firebase_storage: 14.0.0
   firebase_messaging: 17.0.0
+  flutter_timezone: ^5.1.1
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:
