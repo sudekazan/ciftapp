@@ -126,8 +126,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
     final user = appState.currentUser;
 
     // Check if a new live partner heartbeat pulse was received
-    if (user.lastThinkingSender != null &&
-        user.lastThinkingSender != user.name &&
+    if (appState.lastPulseFromPartner &&
         user.lastThinkingOfYou != null &&
         (_lastSeenPulse == null || user.lastThinkingOfYou!.isAfter(_lastSeenPulse!))) {
       _lastSeenPulse = user.lastThinkingOfYou;
@@ -236,7 +235,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                   const Icon(Icons.flash_on_rounded, color: AppColors.primary, size: 14),
                   const SizedBox(width: 6),
                   Text(
-                    user.lastThinkingSender == user.name
+                    !appState.lastPulseFromPartner
                         ? 'Sevgini gönderdin (Az önce)'
                         : '${user.partnerName ?? "Partnerin"} seni düşündü! ❤️',
                     style: theme.textTheme.bodyMedium?.copyWith(

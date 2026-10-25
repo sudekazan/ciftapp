@@ -179,6 +179,10 @@ void main() {
       await settle();
       expect(state.currentUser.lastThinkingSender, 'Ayşe',
           reason: 'sender is identified by uid, not by name');
+      expect(state.lastPulseFromPartner, isTrue);
+
+      await state.triggerThinkingOfYou();
+      expect(state.lastPulseFromPartner, isFalse);
 
       // App restart: the same pulse arrives in the first snapshot again.
       final restarted = AppStateProvider(sync: backend);

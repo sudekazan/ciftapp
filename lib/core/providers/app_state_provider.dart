@@ -580,6 +580,10 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     await prefs.setString('ciftapp_mode', mode.id);
   }
 
+  /// Whether the latest pulse came from the partner (not from this user).
+  bool _lastPulseFromPartner = false;
+  bool get lastPulseFromPartner => _lastPulseFromPartner;
+
   // "Thinking of you" pulses sent today (free plan has a daily limit).
   int _pulsesToday = 0;
   String? _pulseDay;
@@ -603,6 +607,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     await prefs.setString('ciftapp_pulse_day', today);
     await prefs.setInt('ciftapp_pulse_count', _pulsesToday);
 
+    _lastPulseFromPartner = false;
     _currentUser = _currentUser.copyWith(
       lastThinkingOfYou: DateTime.now(),
       lastThinkingSender: _currentUser.name,
@@ -620,6 +625,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void receivePartnerThinkingOfYou({DateTime? at}) {
     HapticFeedback.mediumImpact();
+    _lastPulseFromPartner = true;
     _currentUser = _currentUser.copyWith(
       lastThinkingOfYou: at ?? DateTime.now(),
       lastThinkingSender: _currentUser.partnerName ?? 'Partner',
