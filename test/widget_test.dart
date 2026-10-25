@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ciftapp/core/providers/app_state_provider.dart';
-import 'package:ciftapp/core/providers/dreams_provider.dart';
-import 'package:ciftapp/core/providers/memories_provider.dart';
-import 'package:ciftapp/core/providers/plans_provider.dart';
-import 'package:ciftapp/core/providers/together_provider.dart';
 import 'package:ciftapp/main.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,13 +10,7 @@ void main() {
 
     await tester.pumpWidget(
       MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AppStateProvider()),
-          ChangeNotifierProvider(create: (_) => DreamsProvider()),
-          ChangeNotifierProvider(create: (_) => PlansProvider()),
-          ChangeNotifierProvider(create: (_) => TogetherProvider()),
-          ChangeNotifierProvider(create: (_) => MemoriesProvider()),
-        ],
+        providers: appProviders(),
         child: const CiftApp(),
       ),
     );
@@ -37,13 +26,7 @@ void main() {
 
     await tester.pumpWidget(
       MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AppStateProvider()),
-          ChangeNotifierProvider(create: (_) => DreamsProvider()),
-          ChangeNotifierProvider(create: (_) => PlansProvider()),
-          ChangeNotifierProvider(create: (_) => TogetherProvider()),
-          ChangeNotifierProvider(create: (_) => MemoriesProvider()),
-        ],
+        providers: appProviders(),
         child: const CiftApp(),
       ),
     );

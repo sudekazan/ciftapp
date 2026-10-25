@@ -2,139 +2,129 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/model_json.dart';
 import '../models/plan_item.dart';
-import '../services/local_store.dart';
+import '../services/couple_data_store.dart';
+import '../services/synced_list.dart';
+import 'couple_bound_provider.dart';
 
-class PlansProvider extends ChangeNotifier {
-  static const _eventsKey = 'plan_events';
-  static const _tasksKey = 'plan_tasks';
-  static const _shoppingKey = 'plan_shopping';
-
-  final List<CalendarEvent> _events = [];
-  final List<TaskItem> _tasks = [];
-  final List<ShoppingItem> _shoppingList = [];
-  bool _isLoaded = false;
-
-  List<CalendarEvent> get events => List.unmodifiable(_events);
-  List<TaskItem> get tasks => List.unmodifiable(_tasks);
-  List<ShoppingItem> get shoppingList => List.unmodifiable(_shoppingList);
-  bool get isLoaded => _isLoaded;
-
-  int get pendingTasksCount => _tasks.where((t) => !t.isCompleted).length;
-  int get pendingShoppingCount => _shoppingList.where((s) => !s.isBought).length;
-
-  PlansProvider() {
-    _load();
+class PlansProvider extends ChangeNotifier with CoupleBoundProvider {
+  PlansProvider({CoupleDataStore? store})
+      : dataStore = store ?? FirestoreCoupleDataStore.instance {
+    _events = SyncedList(
+      collection: 'events',
+      localKey: 'plan_events',
+      fromJson: CalendarEventJson.fromJson,
+      toJson: (e) => e.toJson(),
+      idOf: (e) => e.id,
+      onChanged: notifyListeners,
+    );
+    _tasks = SyncedList(
+      collection: 'tasks',
+      localKey: 'plan_tasks',
+      fromJson: TaskItemJson.fromJson,
+      toJson: (t) => t.toJson(),
+      idOf: (t) => t.id,
+      onChanged: notifyListeners,
+    );
+    _shopping = SyncedList(
+      collection: 'shopping',
+      localKey: 'plan_shopping',
+      fromJson: ShoppingItemJson.fromJson,
+      toJson: (s) => s.toJson(),
+      idOf: (s) => s.id,
+      onChanged: notifyListeners,
+    );
+    ready = _load();
   }
 
+  @override
+  final CoupleDataStore dataStore;
+  @override
+  late final Future<void> ready;
+
+  late final SyncedList<CalendarEvent> _events;
+  late final SyncedList<TaskItem> _tasks;
+  late final SyncedList<ShoppingItem> _shopping;
+  bool _isLoaded = false;
+
+  @override
+  Iterable<SyncedList> get syncedLists => [_events, _tasks, _shopping];
+
+  List<CalendarEvent> get events => _events.items;
+  List<TaskItem> get tasks => _tasks.items;
+  List<ShoppingItem> get shoppingList => _shopping.items;
+  bool get isLoaded => _isLoaded;
+
+  int get pendingTasksCount => tasks.where((t) => !t.isCompleted).length;
+  int get pendingShoppingCount => shoppingList.where((s) => !s.isBought).length;
+
   Future<void> _load() async {
-    final events = await LocalStore.loadList(_eventsKey, CalendarEventJson.fromJson);
-    final tasks = await LocalStore.loadList(_tasksKey, TaskItemJson.fromJson);
-    final shopping = await LocalStore.loadList(_shoppingKey, ShoppingItemJson.fromJson);
-    _events
-      ..clear()
-      ..addAll(events);
-    _tasks
-      ..clear()
-      ..addAll(tasks);
-    _shoppingList
-      ..clear()
-      ..addAll(shopping);
+    for (final list in syncedLists) {
+      await list.loadLocal();
+    }
     _isLoaded = true;
     notifyListeners();
   }
 
-  Future<void> _saveEvents() =>
-      LocalStore.saveList(_eventsKey, _events, (e) => e.toJson());
-
-  Future<void> _saveTasks() =>
-      LocalStore.saveList(_tasksKey, _tasks, (t) => t.toJson());
-
-  Future<void> _saveShopping() =>
-      LocalStore.saveList(_shoppingKey, _shoppingList, (s) => s.toJson());
-
   /// Clears all in-memory and persisted data (account deletion).
   Future<void> clearAll() async {
-    _events.clear();
-    _tasks.clear();
-    _shoppingList.clear();
-    await _saveEvents();
-    await _saveTasks();
-    await _saveShopping();
+    for (final list in syncedLists) {
+      await list.clearLocal();
+    }
     notifyListeners();
   }
 
   // Calendar
   void addEvent(String title, DateTime date, {String? description, String category = 'date'}) {
-    _events.add(CalendarEvent(
+    _events.put(CalendarEvent(
       id: const Uuid().v4(),
       title: title,
       date: date,
       description: description,
       category: category,
     ));
-    notifyListeners();
-    _saveEvents();
   }
 
-  void deleteEvent(String id) {
-    _events.removeWhere((e) => e.id == id);
-    notifyListeners();
-    _saveEvents();
-  }
+  void deleteEvent(String id) => _events.remove(id);
 
   // Tasks
   void addTask(String title, {String assignedTo = 'both', DateTime? dueDate}) {
-    _tasks.add(TaskItem(
+    _tasks.put(TaskItem(
       id: const Uuid().v4(),
       title: title,
       assignedTo: assignedTo,
       dueDate: dueDate,
       isCompleted: false,
     ));
-    notifyListeners();
-    _saveTasks();
   }
 
   void toggleTask(String id) {
-    final index = _tasks.indexWhere((t) => t.id == id);
-    if (index != -1) {
-      _tasks[index] = _tasks[index].copyWith(isCompleted: !_tasks[index].isCompleted);
-      notifyListeners();
-      _saveTasks();
-    }
+    final task = _tasks.byId(id);
+    if (task != null) _tasks.put(task.copyWith(isCompleted: !task.isCompleted));
   }
 
-  void deleteTask(String id) {
-    _tasks.removeWhere((t) => t.id == id);
-    notifyListeners();
-    _saveTasks();
-  }
+  void deleteTask(String id) => _tasks.remove(id);
 
   // Shopping
   void addShoppingItem(String name, {String category = 'market', required String addedBy}) {
-    _shoppingList.add(ShoppingItem(
+    _shopping.put(ShoppingItem(
       id: const Uuid().v4(),
       name: name,
       category: category,
       addedBy: addedBy,
       isBought: false,
     ));
-    notifyListeners();
-    _saveShopping();
   }
 
   void toggleShoppingItem(String id) {
-    final index = _shoppingList.indexWhere((s) => s.id == id);
-    if (index != -1) {
-      _shoppingList[index] = _shoppingList[index].copyWith(isBought: !_shoppingList[index].isBought);
-      notifyListeners();
-      _saveShopping();
-    }
+    final item = _shopping.byId(id);
+    if (item != null) _shopping.put(item.copyWith(isBought: !item.isBought));
   }
 
-  void deleteShoppingItem(String id) {
-    _shoppingList.removeWhere((s) => s.id == id);
-    notifyListeners();
-    _saveShopping();
+  void deleteShoppingItem(String id) => _shopping.remove(id);
+
+  @override
+  void dispose() {
+    disposeSyncedLists();
+    super.dispose();
   }
 }

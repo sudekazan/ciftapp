@@ -12,6 +12,7 @@ class PhotoStorage {
   PhotoStorage._();
 
   static const String _folder = 'memory_photos';
+  static String? _localDirPath;
 
   static Future<Directory> _dir() async {
     final docs = await getApplicationDocumentsDirectory();
@@ -19,7 +20,17 @@ class PhotoStorage {
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
+    _localDirPath = dir.path;
     return dir;
+  }
+
+  /// Caches the local photo directory so [resolveSync] can be used in builds.
+  static Future<void> initLocalDir() async {
+    try {
+      await _dir();
+    } catch (e) {
+      debugPrint('PhotoStorage: local dir unavailable: $e');
+    }
   }
 
   /// Ensure we have an active Firebase session. Anonymous sign-in ensures
@@ -35,14 +46,13 @@ class PhotoStorage {
     }
   }
 
-  /// Uploads a local file to Firebase Cloud Storage.
+  /// Uploads a local file into the couple's shared folder
+  /// (`couples/{coupleId}/memories/`, readable by both partners).
   /// Returns the cloud download URL (https://...) or null if upload fails.
-  static Future<String?> uploadToCloud(File file) async {
+  static Future<String?> uploadToCloud(File file, String coupleId) async {
     if (Firebase.apps.isEmpty) return null;
     try {
       await _ensureAuth();
-      final user = FirebaseAuth.instance.currentUser;
-      final uid = user?.uid ?? 'anon';
 
       final dot = file.path.lastIndexOf('.');
       final ext = (dot != -1 && file.path.length - dot <= 6)
@@ -50,7 +60,7 @@ class PhotoStorage {
           : '.jpg';
 
       final fileName = '${const Uuid().v4()}$ext';
-      final ref = FirebaseStorage.instance.ref().child('memories/$uid/$fileName');
+      final ref = FirebaseStorage.instance.ref().child('couples/$coupleId/memories/$fileName');
 
       String contentType = 'image/jpeg';
       if (ext == '.png') {
@@ -81,9 +91,10 @@ class PhotoStorage {
 
   /// Persists [sourcePath].
   /// 1. Copies locally to app documents directory first (ensuring immediate availability & offline backup).
-  /// 2. Attempts to upload to Firebase Cloud Storage.
-  /// 3. Returns the cloud URL if successful, otherwise falls back to the local file path.
-  static Future<String> persist(String sourcePath) async {
+  /// 2. Attempts to upload to the couple's Cloud Storage folder.
+  /// 3. Returns the cloud URL if successful, otherwise falls back to the local file path
+  ///    (uploaded later once a couple space is available).
+  static Future<String> persist(String sourcePath, {String? coupleId}) async {
     if (sourcePath.startsWith('http')) return sourcePath;
     String localTarget = sourcePath;
     try {
@@ -94,7 +105,7 @@ class PhotoStorage {
       final file = await File(sourcePath).copy(localTarget);
 
       // Attempt Cloud Storage upload
-      final cloudUrl = await uploadToCloud(file);
+      final cloudUrl = coupleId == null ? null : await uploadToCloud(file, coupleId);
       if (cloudUrl != null && cloudUrl.isNotEmpty) {
         return cloudUrl;
       }
@@ -107,18 +118,15 @@ class PhotoStorage {
 
   /// Re-maps a stored path to the current documents directory.
   /// (The app container path can change between iOS app updates.)
-  /// If it is already an http/https URL, returns it directly.
-  static Future<String> resolve(String path) async {
+  /// URLs and paths outside the photo folder are returned unchanged.
+  /// Requires [initLocalDir] to have run; otherwise returns [path].
+  static String resolveSync(String path) {
     if (path.startsWith('http')) return path;
     final marker = '/$_folder/';
     final index = path.indexOf(marker);
-    if (index == -1) return path;
-    try {
-      final dir = await _dir();
-      return '${dir.path}/${path.substring(index + marker.length)}';
-    } catch (_) {
-      return path;
-    }
+    final dir = _localDirPath;
+    if (index == -1 || dir == null) return path;
+    return '$dir/${path.substring(index + marker.length)}';
   }
 
   /// Best-effort deletion of stored photo files (both local and cloud).

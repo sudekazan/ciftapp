@@ -1,15 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/daily_question.dart';
+import '../models/model_json.dart';
+import '../services/couple_data_store.dart';
 import '../services/local_store.dart';
+import '../services/synced_list.dart';
+import 'couple_bound_provider.dart';
 
-/// Question catalog + the current user's own answers.
+/// Question catalog, the current user's answers and the partner's answers.
 ///
-/// Partner answers are only filled in once a real sync backend exists;
-/// no fake partner data is generated.
-class TogetherProvider extends ChangeNotifier {
+/// Answers live in `answers`, `quiz` and `whoMore` documents of the couple
+/// space, one field per partner uid, so each side sees the other's answer.
+class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
   static const _stateKey = '${LocalStore.keyPrefix}together_state';
 
   static const List<Map<String, String>> _dailyCatalog = [
@@ -55,32 +60,56 @@ class TogetherProvider extends ChangeNotifier {
     WhoMoreQuestion(id: 'who_06', questionTr: 'Hangimiz plan yapmadan spontane yaşamayı daha çok sever?', questionEn: 'Who is more spontaneous and hates rigid plans?'),
   ];
 
+  TogetherProvider({CoupleDataStore? store})
+      : dataStore = store ?? FirestoreCoupleDataStore.instance {
+    _watchlist = SyncedList(
+      collection: 'watchlist',
+      fromJson: WatchlistItemJson.fromJson,
+      toJson: (w) => w.toJson(),
+      idOf: (w) => w.id,
+      onChanged: notifyListeners,
+    );
+    _rebuild();
+    ready = _load();
+  }
+
+  @override
+  final CoupleDataStore dataStore;
+  @override
+  late final Future<void> ready;
+
+  late final SyncedList<WatchlistItem> _watchlist;
+
   late DailyQuestion _todaysQuestion;
   final List<DailyQuestion> _pastQuestions = [];
-  final List<WatchlistItem> _watchlist = [];
   final List<QuizQuestion> _coupleQuiz = [];
   final List<WhoMoreQuestion> _whoMoreList = [];
 
-  // Persisted user state
+  // The current user's answers (persisted locally and mirrored remotely).
   final Map<String, String> _dailyAnswers = {}; // "dq_id@yyyy-mm-dd" -> answer
   final Map<String, int> _quizAnswers = {};
-  final Map<String, String> _whoMoreVotes = {};
+  final Map<String, String> _whoMoreVotes = {}; // 'me' | 'partner' from my point of view
+
+  // Partner answers from the couple space.
+  final Map<String, String> _partnerDaily = {};
+  final Map<String, int> _partnerQuiz = {};
+  final Map<String, String> _partnerWhoMore = {}; // from the partner's point of view
+
+  final List<StreamSubscription> _answerSubs = [];
   bool _isLoaded = false;
+
+  @override
+  Iterable<SyncedList> get syncedLists => [_watchlist];
 
   DailyQuestion get todaysQuestion => _todaysQuestion;
   List<DailyQuestion> get pastQuestions => List.unmodifiable(_pastQuestions);
-  List<WatchlistItem> get watchlist => List.unmodifiable(_watchlist);
+  List<WatchlistItem> get watchlist => _watchlist.items;
   List<QuizQuestion> get coupleQuiz => List.unmodifiable(_coupleQuiz);
   List<WhoMoreQuestion> get whoMoreList => List.unmodifiable(_whoMoreList);
   bool get isLoaded => _isLoaded;
 
   int get quizMatchCount => _coupleQuiz.where((q) => q.isMatch).length;
   int get whoMoreAgreementCount => _whoMoreList.where((q) => q.isAgreed).length;
-
-  TogetherProvider() {
-    _rebuild();
-    _load();
-  }
 
   static String _dayKey(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -90,6 +119,7 @@ class TogetherProvider extends ChangeNotifier {
     final q = _dailyCatalog[dayIndex % _dailyCatalog.length];
     final key = '${q['id']}@${_dayKey(day)}';
     final answer = _dailyAnswers[key];
+    final partnerAnswer = _partnerDaily[key];
     return DailyQuestion(
       id: key,
       questionTr: q['tr']!,
@@ -97,8 +127,17 @@ class TogetherProvider extends ChangeNotifier {
       date: day,
       myAnswer: answer,
       isMyAnswered: answer != null,
+      partnerAnswer: partnerAnswer,
+      isPartnerAnswered: partnerAnswer != null,
     );
   }
+
+  /// The partner's vote converted to my point of view.
+  static String? _flipVote(String? vote) => switch (vote) {
+        'me' => 'partner',
+        'partner' => 'me',
+        _ => null,
+      };
 
   void _rebuild() {
     final now = DateTime.now();
@@ -119,6 +158,7 @@ class TogetherProvider extends ChangeNotifier {
             optionsTr: q.optionsTr,
             optionsEn: q.optionsEn,
             mySelectedIndex: _quizAnswers[q.id],
+            partnerSelectedIndex: _partnerQuiz[q.id],
           )));
 
     _whoMoreList
@@ -128,10 +168,12 @@ class TogetherProvider extends ChangeNotifier {
             questionTr: q.questionTr,
             questionEn: q.questionEn,
             myVote: _whoMoreVotes[q.id],
+            partnerVote: _flipVote(_partnerWhoMore[q.id]),
           )));
   }
 
   Future<void> _load() async {
+    final legacyWatchlist = <Map<String, dynamic>>[];
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_stateKey);
@@ -141,20 +183,23 @@ class TogetherProvider extends ChangeNotifier {
         _quizAnswers.addAll(Map<String, int>.from(json['quiz'] as Map? ?? {}));
         _whoMoreVotes.addAll(Map<String, String>.from(json['whoMore'] as Map? ?? {}));
         for (final w in (json['watchlist'] as List? ?? [])) {
-          final m = Map<String, dynamic>.from(w as Map);
-          _watchlist.add(WatchlistItem(
-            id: m['id'] as String,
-            title: m['title'] as String,
-            type: m['type'] as String? ?? 'movie',
-            platform: m['platform'] as String? ?? 'Netflix',
-            isWatched: m['isWatched'] as bool? ?? false,
-            rating: (m['rating'] as num?)?.toDouble() ?? 0.0,
-            addedBy: m['addedBy'] as String? ?? '',
-          ));
+          legacyWatchlist.add(Map<String, dynamic>.from(w as Map));
         }
       }
     } catch (e) {
       debugPrint('TogetherProvider: failed to load state: $e');
+    }
+    await _watchlist.loadLocal();
+    // Older versions stored the watchlist inside the state blob.
+    if (legacyWatchlist.isNotEmpty && _watchlist.items.isEmpty) {
+      for (final w in legacyWatchlist) {
+        try {
+          _watchlist.put(WatchlistItemJson.fromJson(w));
+        } catch (e) {
+          debugPrint('TogetherProvider: skipped legacy watchlist item: $e');
+        }
+      }
+      await _save();
     }
     _rebuild();
     _isLoaded = true;
@@ -170,17 +215,6 @@ class TogetherProvider extends ChangeNotifier {
           'daily': _dailyAnswers,
           'quiz': _quizAnswers,
           'whoMore': _whoMoreVotes,
-          'watchlist': _watchlist
-              .map((w) => {
-                    'id': w.id,
-                    'title': w.title,
-                    'type': w.type,
-                    'platform': w.platform,
-                    'isWatched': w.isWatched,
-                    'rating': w.rating,
-                    'addedBy': w.addedBy,
-                  })
-              .toList(),
         }),
       );
     } catch (e) {
@@ -188,15 +222,114 @@ class TogetherProvider extends ChangeNotifier {
     }
   }
 
-  /// Clears all in-memory and persisted data (account deletion).
-  Future<void> clearAll() async {
+  // --- Couple space sync of answers ---
+
+  static const _metaFields = {'id', 'updatedAt', SyncedList.orderField, SyncedList.authorField};
+
+  @override
+  void onCoupleBound(String? coupleId) {
+    for (final sub in _answerSubs) {
+      sub.cancel();
+    }
+    _answerSubs.clear();
+    _partnerDaily.clear();
+    _partnerQuiz.clear();
+    _partnerWhoMore.clear();
+    _rebuild();
+    notifyListeners();
+    if (coupleId == null) return;
+
+    void listen<T>(String collection, Map<String, T> mine, Map<String, T> partner) {
+      final sub = dataStore.listen(coupleId, collection, (docs) {
+        _onAnswers(coupleId, collection, docs, mine, partner);
+      });
+      if (sub != null) _answerSubs.add(sub);
+    }
+
+    listen<String>('answers', _dailyAnswers, _partnerDaily);
+    listen<int>('quiz', _quizAnswers, _partnerQuiz);
+    listen<String>('whoMore', _whoMoreVotes, _partnerWhoMore);
+  }
+
+  Future<void> _onAnswers<T>(
+    String coupleId,
+    String collection,
+    List<Map<String, dynamic>> docs,
+    Map<String, T> mine,
+    Map<String, T> partner,
+  ) async {
+    final myUid = dataStore.currentUid;
+    if (myUid == null) return;
+    final remoteMine = <String, T>{};
+    partner.clear();
+    for (final doc in docs) {
+      final id = doc['id'] as String;
+      for (final entry in doc.entries) {
+        if (_metaFields.contains(entry.key) || entry.value is! T) continue;
+        if (entry.key == myUid) {
+          remoteMine[id] = entry.value as T;
+        } else {
+          partner[id] = entry.value as T;
+        }
+      }
+    }
+
+    // First contact with this couple space: upload answers given offline or
+    // before pairing. Answers already in the cloud (e.g. reinstall) are adopted.
+    final prefs = await SharedPreferences.getInstance();
+    final marker = 'ciftapp_sync_${collection}_couple';
+    if (prefs.getString(marker) != coupleId) {
+      for (final entry in mine.entries) {
+        if (!remoteMine.containsKey(entry.key)) {
+          unawaited(dataStore.merge(coupleId, collection, entry.key, {myUid: entry.value}));
+        }
+      }
+      await prefs.setString(marker, coupleId);
+    }
+    var adopted = false;
+    for (final entry in remoteMine.entries) {
+      if (mine[entry.key] != entry.value) {
+        mine[entry.key] = entry.value;
+        adopted = true;
+      }
+    }
+    if (adopted) await _save();
+
+    _rebuild();
+    notifyListeners();
+  }
+
+  void _pushAnswer(String collection, String id, Object value) {
+    final coupleId = _watchlist.coupleId;
+    final uid = dataStore.currentUid;
+    if (coupleId == null || uid == null) return;
+    unawaited(dataStore.merge(coupleId, collection, id, {uid: value}));
+  }
+
+  @override
+  Future<void> onCoupleDataReset() async {
+    await _clearAnswers();
+  }
+
+  Future<void> _clearAnswers() async {
     _dailyAnswers.clear();
     _quizAnswers.clear();
     _whoMoreVotes.clear();
-    _watchlist.clear();
+    _partnerDaily.clear();
+    _partnerQuiz.clear();
+    _partnerWhoMore.clear();
     _rebuild();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_stateKey);
+    for (final c in ['answers', 'quiz', 'whoMore']) {
+      await prefs.remove('ciftapp_sync_${c}_couple');
+    }
+  }
+
+  /// Clears all in-memory and persisted data (account deletion).
+  Future<void> clearAll() async {
+    await _clearAnswers();
+    await _watchlist.clearLocal();
     notifyListeners();
   }
 
@@ -205,34 +338,25 @@ class TogetherProvider extends ChangeNotifier {
     _todaysQuestion = _todaysQuestion.copyWith(myAnswer: answer, isMyAnswered: true);
     notifyListeners();
     _save();
+    _pushAnswer('answers', _todaysQuestion.id, answer);
   }
 
   void toggleWatchlistItem(String id) {
-    final index = _watchlist.indexWhere((w) => w.id == id);
-    if (index != -1) {
-      _watchlist[index] = _watchlist[index].copyWith(isWatched: !_watchlist[index].isWatched);
-      notifyListeners();
-      _save();
-    }
+    final item = _watchlist.byId(id);
+    if (item != null) _watchlist.put(item.copyWith(isWatched: !item.isWatched));
   }
 
   void addWatchlistItem(String title, {String type = 'movie', String platform = 'Netflix', required String addedBy}) {
-    _watchlist.add(WatchlistItem(
+    _watchlist.put(WatchlistItem(
       id: const Uuid().v4(),
       title: title,
       type: type,
       platform: platform,
       addedBy: addedBy,
     ));
-    notifyListeners();
-    _save();
   }
 
-  void deleteWatchlistItem(String id) {
-    _watchlist.removeWhere((w) => w.id == id);
-    notifyListeners();
-    _save();
-  }
+  void deleteWatchlistItem(String id) => _watchlist.remove(id);
 
   void answerQuizQuestion(String questionId, int selectedIndex) {
     final index = _coupleQuiz.indexWhere((q) => q.id == questionId);
@@ -241,6 +365,7 @@ class TogetherProvider extends ChangeNotifier {
       _coupleQuiz[index] = _coupleQuiz[index].copyWith(mySelectedIndex: selectedIndex);
       notifyListeners();
       _save();
+      _pushAnswer('quiz', questionId, selectedIndex);
     }
   }
 
@@ -251,6 +376,16 @@ class TogetherProvider extends ChangeNotifier {
       _whoMoreList[index] = _whoMoreList[index].copyWith(myVote: vote);
       notifyListeners();
       _save();
+      _pushAnswer('whoMore', questionId, vote);
     }
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _answerSubs) {
+      sub.cancel();
+    }
+    disposeSyncedLists();
+    super.dispose();
   }
 }

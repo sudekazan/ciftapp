@@ -1,4 +1,5 @@
 import '../models/bucket_list_item.dart';
+import '../models/daily_question.dart';
 import '../models/love_note_item.dart';
 import '../models/memory_item.dart';
 import '../models/plan_item.dart';
@@ -152,6 +153,28 @@ extension ShoppingItemJson on ShoppingItem {
         name: j['name'] as String,
         isBought: (j['isBought'] as bool?) ?? false,
         category: (j['category'] as String?) ?? 'market',
+        addedBy: (j['addedBy'] as String?) ?? '',
+      );
+}
+
+extension WatchlistItemJson on WatchlistItem {
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'type': type,
+        'platform': platform,
+        'isWatched': isWatched,
+        'rating': rating,
+        'addedBy': addedBy,
+      };
+
+  static WatchlistItem fromJson(Map<String, dynamic> j) => WatchlistItem(
+        id: j['id'] as String,
+        title: j['title'] as String,
+        type: (j['type'] as String?) ?? 'movie',
+        platform: (j['platform'] as String?) ?? 'Netflix',
+        isWatched: (j['isWatched'] as bool?) ?? false,
+        rating: (j['rating'] as num?)?.toDouble() ?? 0.0,
         addedBy: (j['addedBy'] as String?) ?? '',
       );
 }

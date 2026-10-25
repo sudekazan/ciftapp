@@ -111,7 +111,9 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
     try {
       final persistedPaths = <String>[];
       for (final path in _selectedImageUrls) {
-        persistedPaths.add(path.startsWith('http') ? path : await PhotoStorage.persist(path));
+        persistedPaths.add(path.startsWith('http')
+            ? path
+            : await PhotoStorage.persist(path, coupleId: memoriesProvider.coupleId));
       }
 
       memoriesProvider.addMemory(

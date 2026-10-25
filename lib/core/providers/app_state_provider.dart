@@ -30,6 +30,11 @@ class AppStateProvider extends ChangeNotifier {
   bool get hasCompletedSetup => _hasCompletedSetup;
   String? get coupleId => _coupleId;
 
+  /// Incremented when the user leaves a couple or deletes the account, telling
+  /// content providers to drop their cache instead of carrying it over.
+  int _dataGeneration = 0;
+  int get dataGeneration => _dataGeneration;
+
   /// Partner's UTC offset in minutes. `null` = same as this device.
   int? _partnerUtcOffsetMinutes;
   int get partnerUtcOffsetMinutes =>
@@ -455,6 +460,7 @@ class AppStateProvider extends ChangeNotifier {
     }
     _coupleId = null;
     _inviteEnsured = false;
+    _dataGeneration++;
 
     _currentUser = _currentUser.copyWith(
       isPaired: false,
@@ -487,6 +493,7 @@ class AppStateProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+    _dataGeneration++;
     _hasCompletedSetup = false;
     _partnerUtcOffsetMinutes = null;
     _initDefaultUser();

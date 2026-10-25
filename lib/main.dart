@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,10 +10,12 @@ import 'firebase_options.dart';
 
 import 'core/localization/app_localizations.dart';
 import 'core/providers/app_state_provider.dart';
+import 'core/providers/couple_bound_provider.dart';
 import 'core/providers/dreams_provider.dart';
 import 'core/providers/memories_provider.dart';
 import 'core/providers/plans_provider.dart';
 import 'core/providers/together_provider.dart';
+import 'core/services/couple_data_store.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/purchase_service.dart';
 import 'core/theme/app_theme.dart';
@@ -56,16 +59,34 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AppStateProvider()),
-        ChangeNotifierProvider(create: (_) => DreamsProvider()),
-        ChangeNotifierProvider(create: (_) => PlansProvider()),
-        ChangeNotifierProvider(create: (_) => TogetherProvider()),
-        ChangeNotifierProvider(create: (_) => MemoriesProvider()),
-      ],
+      providers: appProviders(),
       child: const CiftApp(),
     ),
   );
+}
+
+/// App-wide providers. Content providers follow the current couple space so
+/// both partners see the same memories, plans, dreams and answers.
+List<SingleChildWidget> appProviders({
+  AppStateProvider Function()? appState,
+  CoupleDataStore? store,
+}) {
+  ChangeNotifierProxyProvider<AppStateProvider, T> bound<T extends CoupleBoundProvider>(
+    T Function() create,
+  ) {
+    return ChangeNotifierProxyProvider<AppStateProvider, T>(
+      create: (_) => create(),
+      update: (_, app, provider) => provider!..bindCouple(app.coupleId, app.dataGeneration),
+    );
+  }
+
+  return [
+    ChangeNotifierProvider(create: (_) => appState?.call() ?? AppStateProvider()),
+    bound(() => DreamsProvider(store: store)),
+    bound(() => PlansProvider(store: store)),
+    bound(() => TogetherProvider(store: store)),
+    bound(() => MemoriesProvider(store: store)),
+  ];
 }
 
 class CiftApp extends StatelessWidget {

@@ -3,52 +3,72 @@ import 'package:uuid/uuid.dart';
 import '../models/bucket_list_item.dart';
 import '../models/love_note_item.dart';
 import '../models/model_json.dart';
-import '../services/local_store.dart';
+import '../services/couple_data_store.dart';
+import '../services/synced_list.dart';
+import 'couple_bound_provider.dart';
 
-class DreamsProvider extends ChangeNotifier {
-  static const _bucketKey = 'bucket_list';
-  static const _notesKey = 'love_notes';
+class DreamsProvider extends ChangeNotifier with CoupleBoundProvider {
+  DreamsProvider({CoupleDataStore? store})
+      : dataStore = store ?? FirestoreCoupleDataStore.instance {
+    _bucket = SyncedList(
+      collection: 'bucket',
+      localKey: 'bucket_list',
+      fromJson: BucketListItemJson.fromJson,
+      toJson: (b) => b.toJson(),
+      idOf: (b) => b.id,
+      onChanged: notifyListeners,
+      newestFirst: true,
+    );
+    _notes = SyncedList(
+      collection: 'notes',
+      localKey: 'love_notes',
+      fromJson: LoveNoteItemJson.fromJson,
+      toJson: (n) => n.toJson(),
+      idOf: (n) => n.id,
+      onChanged: notifyListeners,
+      newestFirst: true,
+    );
+    ready = _load();
+  }
 
-  final List<BucketListItem> _bucketList = [];
-  final List<LoveNoteItem> _loveNotes = [];
+  @override
+  final CoupleDataStore dataStore;
+  @override
+  late final Future<void> ready;
+
+  late final SyncedList<BucketListItem> _bucket;
+  late final SyncedList<LoveNoteItem> _notes;
   bool _isLoaded = false;
 
-  List<BucketListItem> get bucketList => List.unmodifiable(_bucketList);
-  List<LoveNoteItem> get loveNotes => List.unmodifiable(_loveNotes);
+  @override
+  Iterable<SyncedList> get syncedLists => [_bucket, _notes];
+
+  List<BucketListItem> get bucketList => _bucket.items;
+  List<LoveNoteItem> get loveNotes => _notes.items;
   bool get isLoaded => _isLoaded;
 
-  int get completedCount => _bucketList.where((item) => item.isCompleted).length;
-  double get progressPercentage => _bucketList.isEmpty ? 0 : completedCount / _bucketList.length;
+  int get completedCount => bucketList.where((item) => item.isCompleted).length;
+  double get progressPercentage => bucketList.isEmpty ? 0 : completedCount / bucketList.length;
 
-  DreamsProvider() {
-    _load();
+  /// Whether the current user wrote note [id] (unknown authors count as mine).
+  bool isMyNote(String id) {
+    final author = _notes.authorOf(id);
+    return author == null || author == dataStore.currentUid;
   }
 
   Future<void> _load() async {
-    final bucket = await LocalStore.loadList(_bucketKey, BucketListItemJson.fromJson);
-    final notes = await LocalStore.loadList(_notesKey, LoveNoteItemJson.fromJson);
-    _bucketList
-      ..clear()
-      ..addAll(bucket);
-    _loveNotes
-      ..clear()
-      ..addAll(notes);
+    for (final list in syncedLists) {
+      await list.loadLocal();
+    }
     _isLoaded = true;
     notifyListeners();
   }
 
-  Future<void> _saveBucket() =>
-      LocalStore.saveList(_bucketKey, _bucketList, (b) => b.toJson());
-
-  Future<void> _saveNotes() =>
-      LocalStore.saveList(_notesKey, _loveNotes, (n) => n.toJson());
-
   /// Clears all in-memory and persisted data (account deletion).
   Future<void> clearAll() async {
-    _bucketList.clear();
-    _loveNotes.clear();
-    await _saveBucket();
-    await _saveNotes();
+    for (final list in syncedLists) {
+      await list.clearLocal();
+    }
     notifyListeners();
   }
 
@@ -58,38 +78,31 @@ class DreamsProvider extends ChangeNotifier {
     String? targetDate,
     String? note,
   }) {
-    _bucketList.insert(
-      0,
-      BucketListItem(
-        id: const Uuid().v4(),
-        title: title,
-        category: category,
-        targetDate: targetDate,
-        note: note,
-      ),
-    );
-    notifyListeners();
-    _saveBucket();
+    _bucket.put(BucketListItem(
+      id: const Uuid().v4(),
+      title: title,
+      category: category,
+      targetDate: targetDate,
+      note: note,
+    ));
   }
 
   void toggleBucketItem(String id) {
-    final index = _bucketList.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      final current = _bucketList[index];
-      _bucketList[index] = current.copyWith(
-        isCompleted: !current.isCompleted,
-        completedDate: !current.isCompleted ? DateTime.now() : null,
-      );
-      notifyListeners();
-      _saveBucket();
-    }
+    final current = _bucket.byId(id);
+    if (current == null) return;
+    // copyWith cannot clear completedDate, so rebuild the item.
+    _bucket.put(BucketListItem(
+      id: current.id,
+      title: current.title,
+      category: current.category,
+      isCompleted: !current.isCompleted,
+      completedDate: !current.isCompleted ? DateTime.now() : null,
+      note: current.note,
+      targetDate: current.targetDate,
+    ));
   }
 
-  void deleteBucketItem(String id) {
-    _bucketList.removeWhere((item) => item.id == id);
-    notifyListeners();
-    _saveBucket();
-  }
+  void deleteBucketItem(String id) => _bucket.remove(id);
 
   void addLoveNote({
     required String senderName,
@@ -98,34 +111,27 @@ class DreamsProvider extends ChangeNotifier {
     required int colorHex,
     DateTime? unlockDate,
   }) {
-    _loveNotes.insert(
-      0,
-      LoveNoteItem(
-        id: const Uuid().v4(),
-        senderName: senderName,
-        title: title,
-        content: content,
-        colorHex: colorHex,
-        createdAt: DateTime.now(),
-        unlockDate: unlockDate,
-      ),
-    );
-    notifyListeners();
-    _saveNotes();
+    _notes.put(LoveNoteItem(
+      id: const Uuid().v4(),
+      senderName: senderName,
+      title: title,
+      content: content,
+      colorHex: colorHex,
+      createdAt: DateTime.now(),
+      unlockDate: unlockDate,
+    ));
   }
 
   void unlockLoveNote(String id) {
-    final index = _loveNotes.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      _loveNotes[index] = _loveNotes[index].copyWith(isOpened: true);
-      notifyListeners();
-      _saveNotes();
-    }
+    final note = _notes.byId(id);
+    if (note != null) _notes.put(note.copyWith(isOpened: true));
   }
 
-  void deleteLoveNote(String id) {
-    _loveNotes.removeWhere((item) => item.id == id);
-    notifyListeners();
-    _saveNotes();
+  void deleteLoveNote(String id) => _notes.remove(id);
+
+  @override
+  void dispose() {
+    disposeSyncedLists();
+    super.dispose();
   }
 }
