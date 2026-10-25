@@ -334,6 +334,8 @@ class _DreamsScreenState extends State<DreamsScreen> with SingleTickerProviderSt
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        // Tabs live in one IndexedStack: each FAB needs its own hero tag.
+        heroTag: 'dreams_fab',
         onPressed: () {
           if (_tabController.index == 0) {
             _showAddBucketDialog();

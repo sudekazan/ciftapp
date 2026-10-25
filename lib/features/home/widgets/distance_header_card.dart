@@ -235,6 +235,8 @@ class DistanceHeaderCard extends StatelessWidget {
                       backgroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       elevation: 0,
+                      // The theme's full-width minimum size cannot be used inside a Row.
+                      minimumSize: const Size(0, 36),
                     ),
                   ),
                 ],

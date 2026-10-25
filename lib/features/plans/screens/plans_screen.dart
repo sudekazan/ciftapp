@@ -250,6 +250,8 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        // Tabs live in one IndexedStack: each FAB needs its own hero tag.
+        heroTag: 'plans_fab',
         onPressed: _showAddModal,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,

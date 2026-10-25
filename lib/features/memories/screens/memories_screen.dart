@@ -143,6 +143,8 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        // Tabs live in one IndexedStack: each FAB needs its own hero tag.
+        heroTag: 'memories_fab',
         onPressed: () {
           if (_tabController.index == 0) {
             _showAddMemory();
