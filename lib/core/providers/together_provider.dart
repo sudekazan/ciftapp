@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import '../content/question_catalog.dart';
 import '../models/daily_question.dart';
 import '../models/model_json.dart';
 import '../services/couple_data_store.dart';
@@ -17,48 +18,9 @@ import 'couple_bound_provider.dart';
 class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
   static const _stateKey = '${LocalStore.keyPrefix}together_state';
 
-  static const List<Map<String, String>> _dailyCatalog = [
-    {'id': 'dq_01', 'tr': 'İlk tanıştığımız gün benim hakkımda ilk düşündüğün şey neydi?', 'en': 'What was your very first thought about me when we first met?'},
-    {'id': 'dq_02', 'tr': 'Birlikte geçirdiğimiz en unutulmaz an hangisiydi?', 'en': 'What is the most memorable moment we have shared together?'},
-    {'id': 'dq_03', 'tr': 'Benim en sevdiğin küçük alışkanlığım nedir?', 'en': 'What is your favorite little habit of mine?'},
-    {'id': 'dq_04', 'tr': 'Bir gün tüm gün birlikte olsak ne yapmak isterdin?', 'en': 'If we had a whole free day together, what would you do?'},
-    {'id': 'dq_05', 'tr': 'Bana en son ne zaman gurur duydun?', 'en': 'When was the last time you felt proud of me?'},
-    {'id': 'dq_06', 'tr': 'Birlikte öğrenmek istediğin bir şey var mı?', 'en': 'Is there something you would like us to learn together?'},
-    {'id': 'dq_07', 'tr': 'Seni en çok ne mutlu ediyor, bunu daha sık nasıl yapabilirim?', 'en': 'What makes you happiest, and how can I do it more often?'},
-  ];
-
-  final List<QuizQuestion> _quizCatalog = [
-    QuizQuestion(
-      id: 'quiz_01',
-      questionTr: 'Benim en sevdiğim kahve türü hangisi?',
-      questionEn: 'What is my favorite coffee drink?',
-      optionsTr: ['Latte', 'Americano', 'Filtre Kahve', 'Cappuccino'],
-      optionsEn: ['Latte', 'Americano', 'Filter Coffee', 'Cappuccino'],
-    ),
-    QuizQuestion(
-      id: 'quiz_02',
-      questionTr: 'Stresli olduğumda beni en çok ne rahatlatır?',
-      questionEn: 'What relaxes me the most when stressed?',
-      optionsTr: ['Müzik dinlemek', 'Sana sarılmak', 'Yürüyüşe çıkmak', 'Tatlı yemek'],
-      optionsEn: ['Listening to music', 'Hugging you', 'Going for a walk', 'Eating sweets'],
-    ),
-    QuizQuestion(
-      id: 'quiz_03',
-      questionTr: 'Birlikte gitmek istediğimiz ilk yurt dışı tatili neresi?',
-      questionEn: 'Where is our dream first trip together?',
-      optionsTr: ['İtalya', 'Japonya', 'İzlanda', 'İspanya'],
-      optionsEn: ['Italy', 'Japan', 'Iceland', 'Spain'],
-    ),
-  ];
-
-  final List<WhoMoreQuestion> _whoMoreCatalog = [
-    WhoMoreQuestion(id: 'who_01', questionTr: 'Hangimiz sabahları daha zor uyanır?', questionEn: 'Who is harder to wake up in the morning?'),
-    WhoMoreQuestion(id: 'who_02', questionTr: 'Hangimiz sürpriz yapmayı daha çok sever?', questionEn: 'Who loves preparing surprises more?'),
-    WhoMoreQuestion(id: 'who_03', questionTr: 'Hangimiz daha kıskançtır?', questionEn: 'Who gets jealous more easily?'),
-    WhoMoreQuestion(id: 'who_04', questionTr: 'Hangimiz tartışmalarda ilk adımı atıp özür diler?', questionEn: 'Who takes the first step and apologizes first?'),
-    WhoMoreQuestion(id: 'who_05', questionTr: 'Hangimiz kaybolduğunda yol sormaktan daha çok çekinir?', questionEn: 'Who is more hesitant to ask for directions when lost?'),
-    WhoMoreQuestion(id: 'who_06', questionTr: 'Hangimiz plan yapmadan spontane yaşamayı daha çok sever?', questionEn: 'Who is more spontaneous and hates rigid plans?'),
-  ];
+  static List<Map<String, String>> get _dailyCatalog => QuestionCatalog.daily;
+  static Iterable<QuizQuestion> get _quizCatalog => QuestionCatalog.quizPacks.expand((p) => p.items);
+  static Iterable<WhoMoreQuestion> get _whoMoreCatalog => QuestionCatalog.whoMorePacks.expand((p) => p.items);
 
   TogetherProvider({CoupleDataStore? store})
       : dataStore = store ?? FirestoreCoupleDataStore.instance {
@@ -113,6 +75,21 @@ class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
   List<WatchlistItem> get watchlist => _watchlist.items;
   List<QuizQuestion> get coupleQuiz => List.unmodifiable(_coupleQuiz);
   List<WhoMoreQuestion> get whoMoreList => List.unmodifiable(_whoMoreList);
+
+  List<QuestionPack<QuizQuestion>> get quizPacks => QuestionCatalog.quizPacks;
+  List<QuestionPack<WhoMoreQuestion>> get whoMorePacks => QuestionCatalog.whoMorePacks;
+
+  /// Questions of quiz pack [packId] with both partners' answers.
+  List<QuizQuestion> quizIn(String packId) {
+    final ids = quizPacks.firstWhere((p) => p.id == packId).items.map((q) => q.id).toSet();
+    return _coupleQuiz.where((q) => ids.contains(q.id)).toList();
+  }
+
+  /// "Who is more" questions of pack [packId] with both partners' votes.
+  List<WhoMoreQuestion> whoMoreIn(String packId) {
+    final ids = whoMorePacks.firstWhere((p) => p.id == packId).items.map((q) => q.id).toSet();
+    return _whoMoreList.where((q) => ids.contains(q.id)).toList();
+  }
   bool get isLoaded => _isLoaded;
 
   int get quizMatchCount => _coupleQuiz.where((q) => q.isMatch).length;
@@ -122,9 +99,17 @@ class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   DailyQuestion _questionFor(DateTime day) {
+    final dateKey = _dayKey(day);
+    // A day that already has answers keeps its question even if the catalog
+    // (and therefore the rotation) changed since.
+    final answeredKey = [..._dailyAnswers.keys, ..._partnerDaily.keys]
+        .where((k) => k.endsWith('@$dateKey'))
+        .firstOrNull;
+    final answeredId = answeredKey?.substring(0, answeredKey.indexOf('@'));
     final dayIndex = DateTime.utc(day.year, day.month, day.day).millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
-    final q = _dailyCatalog[dayIndex % _dailyCatalog.length];
-    final key = '${q['id']}@${_dayKey(day)}';
+    final q = _dailyCatalog.where((c) => c['id'] == answeredId).firstOrNull ??
+        _dailyCatalog[dayIndex % _dailyCatalog.length];
+    final key = '${q['id']}@$dateKey';
     final answer = _dailyAnswers[key];
     final partnerAnswer = _partnerDaily[key];
     return DailyQuestion(

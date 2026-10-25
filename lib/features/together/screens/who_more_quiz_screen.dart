@@ -4,9 +4,17 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/together_provider.dart';
+import '../widgets/pack_selector.dart';
 
-class WhoMoreQuizScreen extends StatelessWidget {
+class WhoMoreQuizScreen extends StatefulWidget {
   const WhoMoreQuizScreen({super.key});
+
+  @override
+  State<WhoMoreQuizScreen> createState() => _WhoMoreQuizScreenState();
+}
+
+class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
+  String _packId = 'starter';
 
   @override
   Widget build(BuildContext context) {
@@ -16,14 +24,14 @@ class WhoMoreQuizScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final list = togetherProvider.whoMoreList;
-    final agreedCount = togetherProvider.whoMoreAgreementCount;
+    final list = togetherProvider.whoMoreIn(_packId);
+    final agreedCount = list.where((q) => q.isAgreed).length;
     final totalVoted = list.where((q) => q.isBothVoted).length;
 
     final myName = appState.currentUser.name;
     final partnerName = appState.currentUser.partnerName ?? 'Can';
 
-    final percent = totalVoted > 0 ? ((agreedCount / totalVoted) * 100).round() : 100;
+    final percent = totalVoted > 0 ? ((agreedCount / totalVoted) * 100).round() : 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -85,7 +93,15 @@ class WhoMoreQuizScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            PackSelector(
+              packs: togetherProvider.whoMorePacks,
+              selectedId: _packId,
+              lang: appState.currentLanguage,
+              isPremium: appState.currentUser.isPremium,
+              onSelected: (id) => setState(() => _packId = id),
+            ),
+            const SizedBox(height: 16),
 
             ...list.asMap().entries.map((entry) {
               final index = entry.key;

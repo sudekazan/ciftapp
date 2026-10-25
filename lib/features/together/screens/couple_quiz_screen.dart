@@ -4,9 +4,17 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/together_provider.dart';
+import '../widgets/pack_selector.dart';
 
-class CoupleQuizScreen extends StatelessWidget {
+class CoupleQuizScreen extends StatefulWidget {
   const CoupleQuizScreen({super.key});
+
+  @override
+  State<CoupleQuizScreen> createState() => _CoupleQuizScreenState();
+}
+
+class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
+  String _packId = 'starter';
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +24,9 @@ class CoupleQuizScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final quizList = togetherProvider.coupleQuiz;
-    final matchCount = togetherProvider.quizMatchCount;
+    final quizList = togetherProvider.quizIn(_packId);
+    final matchCount = quizList.where((q) => q.isMatch).length;
+    final bothAnswered = quizList.where((q) => q.isBothAnswered).length;
     final partnerName = appState.currentUser.partnerName ?? 'Can';
 
     return Scaffold(
@@ -52,7 +61,7 @@ class CoupleQuizScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Uyum Skoru: %${((matchCount / quizList.length) * 100).round()}',
+                          'Uyum Skoru: %${bothAnswered == 0 ? 0 : ((matchCount / bothAnswered) * 100).round()}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -61,7 +70,7 @@ class CoupleQuizScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$matchCount / ${quizList.length} soruda aynı cevabı verdiniz! 🎉',
+                          '$matchCount / $bothAnswered soruda aynı cevabı verdiniz! 🎉',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.85),
                             fontSize: 13,
@@ -73,7 +82,15 @@ class CoupleQuizScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            PackSelector(
+              packs: togetherProvider.quizPacks,
+              selectedId: _packId,
+              lang: appState.currentLanguage,
+              isPremium: appState.currentUser.isPremium,
+              onSelected: (id) => setState(() => _packId = id),
+            ),
+            const SizedBox(height: 16),
 
             ...quizList.asMap().entries.map((entry) {
               final index = entry.key;
