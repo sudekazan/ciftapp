@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/services/couple_sync_service.dart';
 
 class PairingScreen extends StatefulWidget {
   final bool isModal;
@@ -61,6 +62,7 @@ class _PairingScreenState extends State<PairingScreen> {
 
     final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
 
     setState(() {
       _isConnecting = true;
@@ -80,10 +82,10 @@ class _PairingScreenState extends State<PairingScreen> {
       messenger.showSnackBar(
         SnackBar(
           content: Row(
-            children: const [
-              Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text('Partnerinizle başarıyla eşleştiniz! ❤️'),
+            children: [
+              const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(l10n.text('pair_success'))),
             ],
           ),
           backgroundColor: AppColors.primary,
@@ -91,11 +93,11 @@ class _PairingScreenState extends State<PairingScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
-    } catch (e) {
+    } on PairingException catch (e) {
       if (mounted) {
         setState(() {
           _isConnecting = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = l10n.text('pair_err_${e.error.name}');
         });
       }
     }

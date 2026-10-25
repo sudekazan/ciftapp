@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_links.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/relationship_mode.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/services/couple_sync_service.dart';
 import '../../main_navigation_screen.dart';
 
 class InitialSetupScreen extends StatefulWidget {
@@ -99,7 +101,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     setState(() => _isLoading = true);
 
     String? partnerCode;
-    String? partnerName;
 
     if (_pathChoice == 'have_code') {
       final error = appState.validatePartnerCode(_partnerCodeController.text);
@@ -111,20 +112,29 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         return;
       }
       partnerCode = _partnerCodeController.text.trim().toUpperCase();
-      partnerName = null; // Real partner name comes from the sync backend.
     }
 
-    await appState.completeInitialSetup(
-      name: name,
-      mode: _selectedMode,
-      partnerCode: partnerCode,
-      partnerName: partnerName,
-      startDate: _startDate,
-    );
-
-    setState(() => _isLoading = false);
+    try {
+      await appState.completeInitialSetup(
+        name: name,
+        mode: _selectedMode,
+        partnerCode: partnerCode,
+        startDate: _startDate,
+      );
+    } on PairingException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).text('pair_err_${e.error.name}')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
+    setState(() => _isLoading = false);
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
     );

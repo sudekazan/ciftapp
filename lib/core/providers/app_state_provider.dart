@@ -211,30 +211,23 @@ class AppStateProvider extends ChangeNotifier {
     NotificationService.instance.subscribeToCouple(_coupleId!);
   }
 
+  /// Finishes onboarding. When [partnerCode] is given the pairing must succeed:
+  /// on failure a [PairingException] is thrown and nothing is persisted, so the
+  /// user can fix the code and try again.
   Future<void> completeInitialSetup({
     required String name,
     required RelationshipMode mode,
     String? partnerCode,
-    String? partnerName,
     DateTime? startDate,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final isPairingWithCode = partnerCode != null && partnerCode.trim().isNotEmpty;
-    String? resolvedPartnerName = partnerName;
+    String? resolvedPartnerName;
 
     if (isPairingWithCode) {
-      try {
-        final result = await FirestoreCoupleSyncService.instance.pairWithInviteCode(
-          inviteCode: partnerCode,
-          myName: name,
-          fcmToken: NotificationService.instance.fcmToken,
-        );
-        _coupleId = result['coupleId'] as String?;
-        resolvedPartnerName = (result['partnerName'] as String?) ?? partnerName ?? 'Partnerim';
-      } catch (e) {
-        debugPrint('Setup pairing error: $e');
-        _coupleId = 'cpl_${partnerCode.trim().toUpperCase()}';
-      }
+      final result = await _pairOrThrow(partnerCode, name);
+      _coupleId = result['coupleId'] as String?;
+      resolvedPartnerName = result['partnerName'] as String?;
     } else {
       try {
         _coupleId = await FirestoreCoupleSyncService.instance.registerMyCoupleSpace(
@@ -254,8 +247,7 @@ class AppStateProvider extends ChangeNotifier {
       name: name,
       mode: mode,
       isPaired: isPairingWithCode,
-      partnerId: isPairingWithCode ? 'partner_${partnerCode.toLowerCase().trim()}' : null,
-      partnerName: isPairingWithCode ? (resolvedPartnerName ?? 'Partnerim') : null,
+      partnerName: resolvedPartnerName,
       relationshipStartDate: startDate ?? _currentUser.relationshipStartDate,
     );
 
@@ -273,10 +265,28 @@ class AppStateProvider extends ChangeNotifier {
     }
     if (isPairingWithCode) {
       await prefs.setBool('ciftapp_is_paired', true);
-      await prefs.setString('ciftapp_partner_name', resolvedPartnerName ?? 'Partnerim');
+      if (resolvedPartnerName != null) {
+        await prefs.setString('ciftapp_partner_name', resolvedPartnerName);
+      }
     }
 
     _startCoupleSync();
+  }
+
+  /// Pairs via the backend; any failure surfaces as a [PairingException].
+  Future<Map<String, dynamic>> _pairOrThrow(String code, String myName) async {
+    try {
+      return await FirestoreCoupleSyncService.instance.pairWithInviteCode(
+        inviteCode: code,
+        myName: myName.isEmpty ? 'Ben' : myName,
+        fcmToken: NotificationService.instance.fcmToken,
+      );
+    } on PairingException {
+      rethrow;
+    } catch (e) {
+      debugPrint('Pairing error: $e');
+      throw const PairingException(PairingError.unavailable);
+    }
   }
 
   Future<void> updateRelationshipStartDate(DateTime date) async {
@@ -351,35 +361,25 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> pairWithCode(String code, {String? partnerName}) async {
-    String? resolvedPartner = partnerName;
-    try {
-      final result = await FirestoreCoupleSyncService.instance.pairWithInviteCode(
-        inviteCode: code,
-        myName: _currentUser.name.isEmpty ? 'Ben' : _currentUser.name,
-        fcmToken: NotificationService.instance.fcmToken,
-      );
-      _coupleId = result['coupleId'] as String?;
-      resolvedPartner = partnerName ?? (result['partnerName'] as String?) ?? 'Partnerim';
-    } catch (e) {
-      debugPrint('Pairing error: $e');
-      if (e.toString().contains('bulunamadı') ||
-          e.toString().contains('eşleşemezsiniz') ||
-          e.toString().contains('kullanılmış')) {
-        rethrow;
-      }
-    }
+  /// Pairs with a partner's invite code. Throws [PairingException] on failure
+  /// and leaves the current (unpaired) state untouched.
+  Future<void> pairWithCode(String code) async {
+    final result = await _pairOrThrow(code, _currentUser.name);
+    _coupleId = result['coupleId'] as String?;
+    final resolvedPartner = result['partnerName'] as String?;
 
     _currentUser = _currentUser.copyWith(
       isPaired: true,
-      partnerId: 'partner_${code.toLowerCase()}',
-      partnerName: resolvedPartner ?? 'Partnerim',
+      partnerId: result['partnerId'] as String?,
+      partnerName: resolvedPartner,
     );
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('ciftapp_is_paired', true);
-    await prefs.setString('ciftapp_partner_name', resolvedPartner ?? 'Partnerim');
+    if (resolvedPartner != null) {
+      await prefs.setString('ciftapp_partner_name', resolvedPartner);
+    }
     if (_coupleId != null) {
       await prefs.setString('ciftapp_couple_id', _coupleId!);
     }

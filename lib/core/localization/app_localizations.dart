@@ -137,6 +137,11 @@ class AppLocalizations {
       'setup_copied_snack': 'Davet kodu kopyalandı!',
       'setup_enter_name_snack': 'Lütfen devam etmek için adınızı girin ❤️',
       'setup_enter_code_snack': 'Lütfen partnerinizin eşleşme kodunu girin',
+      'pair_err_notFound': 'Bu koda ait bir çift alanı bulunamadı. Lütfen kodu kontrol et.',
+      'pair_err_ownCode': 'Kendi davet kodunla eşleşemezsin. Partnerinin kodunu gir.',
+      'pair_err_alreadyUsed': 'Bu davet kodu zaten başka bir eşleşmede kullanılmış.',
+      'pair_err_unavailable': 'Şu an eşleşme yapılamadı. İnternet bağlantını kontrol edip tekrar dene.',
+      'pair_success': 'Partnerinle başarıyla eşleştin! ❤️',
 
       // Dreams & Love Capsules
       'dreams_tab_bucket': 'Hayal Listesi ✈️',
@@ -304,6 +309,11 @@ class AppLocalizations {
       'setup_copied_snack': 'Invite code copied!',
       'setup_enter_name_snack': 'Please enter your name to continue ❤️',
       'setup_enter_code_snack': "Please enter your partner's invite code",
+      'pair_err_notFound': 'No couple space was found for this code. Please check it.',
+      'pair_err_ownCode': "You can't pair with your own invite code. Enter your partner's code.",
+      'pair_err_alreadyUsed': 'This invite code has already been used by another couple.',
+      'pair_err_unavailable': "Pairing isn't possible right now. Check your connection and try again.",
+      'pair_success': 'You are now paired with your partner! ❤️',
 
       // Dreams & Love Capsules
       'dreams_tab_bucket': 'Bucket List ✈️',

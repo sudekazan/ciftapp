@@ -1,4 +1,6 @@
+import 'package:ciftapp/core/models/relationship_mode.dart';
 import 'package:ciftapp/core/providers/app_state_provider.dart';
+import 'package:ciftapp/core/services/couple_sync_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,18 +24,37 @@ void main() {
     expect(b.currentUser.inviteCode, code, reason: 'code must survive restart');
   });
 
-  test('unpairCouple clears partner info', () async {
+  test('failed pairing never marks the user as paired', () async {
     final state = AppStateProvider();
     await settle();
 
-    await state.pairWithCode('CFT-ABC123', partnerName: 'Ayşe');
-    expect(state.currentUser.isPaired, isTrue);
-    expect(state.currentUser.partnerName, 'Ayşe');
-
-    await state.unpairCouple();
+    // No backend in tests: the code cannot be verified.
+    await expectLater(
+      state.pairWithCode('CFT-ABC123'),
+      throwsA(isA<PairingException>()),
+    );
     expect(state.currentUser.isPaired, isFalse);
-    expect(state.currentUser.partnerId, isNull);
     expect(state.currentUser.partnerName, isNull);
+  });
+
+  test('failed pairing during setup does not complete setup', () async {
+    final state = AppStateProvider();
+    await settle();
+
+    await expectLater(
+      state.completeInitialSetup(
+        name: 'Sude',
+        mode: RelationshipMode.longDistance,
+        partnerCode: 'CFT-ABC123',
+      ),
+      throwsA(isA<PairingException>()),
+    );
+    expect(state.hasCompletedSetup, isFalse);
+    expect(state.currentUser.isPaired, isFalse);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('ciftapp_setup_completed'), isNot(true));
+    expect(prefs.getBool('ciftapp_is_paired'), isNot(true));
   });
 
   test('default user has no sample data', () async {

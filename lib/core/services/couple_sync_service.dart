@@ -6,6 +6,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/model_json.dart';
 import '../models/plan_item.dart';
 
+/// Why pairing with an invite code failed. The UI maps these to localized text.
+enum PairingError { notFound, ownCode, alreadyUsed, unavailable }
+
+class PairingException implements Exception {
+  final PairingError error;
+  const PairingException(this.error);
+
+  @override
+  String toString() => 'PairingException($error)';
+}
+
 abstract class ICoupleSyncService {
   Future<void> sendThinkingOfYouPulse(String coupleId, String senderName);
   Future<void> syncTask(String coupleId, TaskItem task);
@@ -90,14 +101,8 @@ class FirestoreCoupleSyncService implements ICoupleSyncService {
     String? fcmToken,
   }) async {
     final cleanCode = inviteCode.trim().toUpperCase();
-    if (Firebase.apps.isEmpty) {
-      return {
-        'coupleId': 'cpl_$cleanCode',
-        'partnerName': 'Partnerim',
-        'mode': 'long_distance',
-        'startDate': DateTime.now().toIso8601String(),
-      };
-    }
+    // Without a backend there is no way to verify the code: never fake a pairing.
+    if (Firebase.apps.isEmpty) throw const PairingException(PairingError.unavailable);
 
     final uid = await _ensureUid();
     final firestore = FirebaseFirestore.instance;
@@ -118,7 +123,7 @@ class FirestoreCoupleSyncService implements ICoupleSyncService {
         snapshot = query.docs.first;
         docRef = snapshot.reference;
       } else {
-        throw Exception('Bu davet koduna ($cleanCode) ait aktif bir çift alanı bulunamadı. Lütfen partnerinizin kodunu kontrol edin.');
+        throw const PairingException(PairingError.notFound);
       }
     }
 
@@ -128,11 +133,11 @@ class FirestoreCoupleSyncService implements ICoupleSyncService {
     final user1Name = data['user1Name'] ?? 'Partner';
 
     if (user1Id == uid) {
-      throw Exception('Kendi davet kodunuzla eşleşemezsiniz.');
+      throw const PairingException(PairingError.ownCode);
     }
 
     if (user2Id != null && user2Id != uid) {
-      throw Exception('Bu davet kodu zaten başka bir eşleşmede kullanılmış.');
+      throw const PairingException(PairingError.alreadyUsed);
     }
 
     // Link current user as user2
