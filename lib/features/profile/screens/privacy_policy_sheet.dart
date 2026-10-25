@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_links.dart';
+import '../../../core/localization/app_localizations.dart';
 
 class PrivacyPolicySheet extends StatelessWidget {
   const PrivacyPolicySheet({super.key});
@@ -9,6 +10,7 @@ class PrivacyPolicySheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -32,12 +34,14 @@ class PrivacyPolicySheet extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Row(
-            children: const [
+            children: [
               Icon(Icons.security_rounded, color: AppColors.primary, size: 24),
               SizedBox(width: 10),
-              Text(
-                'Gizlilik & KVKK Aydınlatma',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  l10n.text('privacy_sheet_title'),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -45,15 +49,7 @@ class PrivacyPolicySheet extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               child: Text(
-                'Yanyana olarak kişisel verilerinizin ve ilişkinize ait özel anıların güvenliğini en üst düzeyde tutuyoruz.\n\n'
-                '1. Veri Sorumlusu ve Kapsam:\n'
-                '6698 sayılı KVKK ve GDPR kapsamında, yüklediğiniz anı fotoğrafları ve planlarınız yalnızca eşleşmiş olduğunuz partneriniz ile sizin aranızda paylaşılır.\n\n'
-                '2. Şifreleme ve Güvenlik:\n'
-                'Verileriniz cihazınızda saklanır; senkronizasyon etkinleştiğinde aktarım sırasında TLS ile korunur ve şifreli bulut altyapısında tutulur.\n\n'
-                '3. Veri Silme ve Unutulma Hakkı:\n'
-                'Uygulama ayarlarından "Hesabı ve Verileri Sil" seçeneğini kullanarak dilediğiniz zaman tüm görsel ve hesap kayıtlarınızı kalıcı olarak silebilirsiniz.\n\n'
-                '4. Reklam ve Üçüncü Taraflar:\n'
-                'Verileriniz asla reklam verenlere satılmaz veya hedefli reklam amacıyla üçüncü taraflarla paylaşılmaz.',
+                l10n.text('privacy_sheet_body'),
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 13),
               ),
             ),
@@ -64,18 +60,18 @@ class PrivacyPolicySheet extends StatelessWidget {
             children: [
               TextButton(
                 onPressed: () => AppLinks.open(context, AppLinks.privacyPolicy),
-                child: const Text('Tam Gizlilik Politikası'),
+                child: Text(l10n.text('privacy_full')),
               ),
               TextButton(
                 onPressed: () => AppLinks.open(context, AppLinks.termsOfUse),
-                child: const Text('Kullanım Şartları'),
+                child: Text(l10n.text('terms_of_use')),
               ),
             ],
           ),
           const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Anladım'),
+            child: Text(l10n.text('got_it')),
           ),
         ],
       ),

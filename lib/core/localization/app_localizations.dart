@@ -269,7 +269,7 @@ class AppLocalizations {
       'consent_privacy': 'Gizlilik Politikası',
       'consent_and': ' ve ',
       'consent_terms': 'Kullanım Şartları',
-      'consent_suffix': '’nı okudum, onaylıyorum.',
+      'consent_suffix': '’nı okudum, onaylıyorum ve verilerimin bu metinde belirtilen hizmet sağlayıcılarca yurt dışında işlenmesine açık rıza veriyorum.',
       'setup_start_btn': 'Yanyana’yı Başlat ❤️',
       'setup_explore_alone': 'Şimdilik Tek Başıma İncele',
 
@@ -458,6 +458,12 @@ class AppLocalizations {
       'dq_preview_both_answered': 'İkiniz de cevapladınız! Cevapları okumak için dokunun.',
       'invite_copied_send': 'Davet kodun kopyalandı! Partnerine gönder ❤️',
       'copy': 'Kopyala',
+
+      // Gizlilik
+      'privacy_sheet_title': 'Gizlilik & KVKK Aydınlatma',
+      'privacy_sheet_body': 'Kişisel verilerinizi yalnızca uygulamanın çalışması için işliyoruz.\n\n1. Hangi veriler: Adınız, ilişki bilgileri (başlangıç ve buluşma tarihi, mod, saat dilimi), eklediğiniz anılar, fotoğraflar, notlar, planlar ve cevaplar; bildirim için cihaz kimliği; abonelik durumu; kullanım istatistikleri ve çökme raporları.\n\n2. Kimlerle paylaşılır: İçerikleriniz yalnızca eşleştiğiniz partnerinizle paylaşılır. Güvenlik kuralları başka kullanıcıların erişimini engeller.\n\n3. Hizmet sağlayıcılar ve yurt dışı aktarım: Veriler Google Firebase altyapısında (içerikler AB bölgesinde) şifreli saklanır; abonelikler RevenueCat ve App Store / Google Play üzerinden yönetilir. Bu hizmetler nedeniyle bazı veriler yurt dışında işlenebilir; bu aktarım kurulumda verdiğiniz açık rızaya dayanır.\n\n4. Silme: Profil → Hesabı ve Verileri Sil ile hesabınızı ve verilerinizi silebilirsiniz. Partneriniz varsa ortak anılar onun hesabında kalır.\n\n5. Reklam: Verileriniz satılmaz ve reklam amacıyla paylaşılmaz.\n\nİletişim: destek@yanyana.app',
+      'privacy_full': 'Tam Gizlilik Politikası',
+      'got_it': 'Anladım',
     },
     'en': {
       'app_name': 'Yanyana',
@@ -714,7 +720,7 @@ class AppLocalizations {
       'consent_privacy': 'Privacy Policy',
       'consent_and': ' and ',
       'consent_terms': 'Terms of Use',
-      'consent_suffix': '.',
+      'consent_suffix': ', and I consent to my data being processed abroad by the service providers listed there.',
       'setup_start_btn': 'Start Yanyana ❤️',
       'setup_explore_alone': 'Explore on My Own for Now',
 
@@ -903,6 +909,12 @@ class AppLocalizations {
       'dq_preview_both_answered': 'You both answered! Tap to read the answers.',
       'invite_copied_send': 'Invite code copied! Send it to your partner ❤️',
       'copy': 'Copy',
+
+      // Gizlilik
+      'privacy_sheet_title': 'Privacy Summary',
+      'privacy_sheet_body': 'We process your personal data only to run the app.\n\n1. What data: your name, relationship details (start and reunion dates, mode, time zone), the memories, photos, notes, plans and answers you add; a device token for notifications; subscription status; usage statistics and crash reports.\n\n2. Who sees it: your content is shared only with the partner you paired with. Security rules block access by anyone else.\n\n3. Service providers and transfers: data is stored encrypted on Google Firebase (content in the EU region); subscriptions are managed by RevenueCat and the App Store / Google Play. Some data may be processed abroad by these services, based on the consent you gave during setup.\n\n4. Deletion: delete your account and data via Profile → Delete Account & Data. If you have a partner, shared memories stay in their account.\n\n5. Ads: your data is never sold or shared for advertising.\n\nContact: destek@yanyana.app',
+      'privacy_full': 'Full Privacy Policy',
+      'got_it': 'Got It',
     },
   };
 
