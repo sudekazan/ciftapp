@@ -57,8 +57,11 @@ void main() async {
   // Initialize Notification Service (FCM & Alerts)
   await NotificationService.instance.init();
 
-  // Initialize RevenueCat SDK (non-blocking if not configured)
-  await PurchaseService.instance.init();
+  // Initialize RevenueCat SDK (non-blocking if not configured). The Firebase uid
+  // is the RevenueCat app user id so premium can be shared with the partner.
+  await PurchaseService.instance.init(
+    appUserId: Firebase.apps.isEmpty ? null : FirebaseAuth.instance.currentUser?.uid,
+  );
 
   runApp(
     MultiProvider(

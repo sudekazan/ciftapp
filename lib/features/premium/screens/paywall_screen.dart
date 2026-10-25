@@ -71,41 +71,38 @@ class _PaywallScreenState extends State<PaywallScreen> {
     ),
   ];
 
+  void _showMessage(String text, {Color color = Colors.redAccent}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), backgroundColor: color),
+    );
+  }
+
   Future<void> _handlePurchase() async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
     if (!RevenueCatConstants.isConfigured) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('RevenueCat henüz yapılandırılmadı. Lütfen revenuecat_constants.dart dosyasına anahtarlarınızı ekleyin.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showMessage(l10n.text('purchase_err_notConfigured'), color: Colors.orange);
       return;
     }
 
     final selectedPackage = _selectedPlanIndex == 1 ? _yearlyPackage : _monthlyPackage;
     if (selectedPackage == null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Ürün paketleri mağazadan alınamadı. Lütfen internet bağlantınızı kontrol edin.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      _showMessage(l10n.text('offerings_unavailable'));
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final isSuccess = await PurchaseService.instance.purchasePackage(selectedPackage);
+      final outcome = await PurchaseService.instance.purchase(selectedPackage);
       if (!mounted) return;
 
-      if (isSuccess) {
-        await appState.upgradeToPremium();
-        if (mounted) {
+      switch (outcome) {
+        case PurchaseOutcome.success:
+          await appState.upgradeToPremium();
+          if (!mounted) return;
           Navigator.of(context).pop();
           messenger.showSnackBar(
             SnackBar(
@@ -120,17 +117,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-        }
+        case PurchaseOutcome.pending:
+          _showMessage(l10n.text('purchase_pending'), color: AppColors.secondary);
+        case PurchaseOutcome.cancelled:
+          break;
       }
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Satın alma hatası: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+    } on PurchaseFailure catch (e) {
+      if (mounted) _showMessage(l10n.text('purchase_err_${e.reason.name}'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -138,51 +131,29 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _handleRestore() async {
     final nav = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
     if (!RevenueCatConstants.isConfigured) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('RevenueCat henüz yapılandırılmadı.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showMessage(l10n.text('purchase_err_notConfigured'), color: Colors.orange);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final isRestored = await PurchaseService.instance.restorePurchases();
+      final isRestored = await PurchaseService.instance.restore();
       if (!mounted) return;
 
       if (isRestored) {
         await appState.upgradeToPremium();
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Aboneliğiniz başarıyla geri yüklendi! ❤️'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        _showMessage(l10n.text('restore_success'), color: AppColors.primary);
         nav.pop();
       } else {
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Aktif bir abonelik bulunamadı.'),
-            backgroundColor: Colors.grey,
-          ),
-        );
+        _showMessage(l10n.text('restore_none'), color: Colors.grey);
       }
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Geri yükleme hatası: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+    } on PurchaseFailure catch (e) {
+      if (mounted) _showMessage(l10n.text('purchase_err_${e.reason.name}'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

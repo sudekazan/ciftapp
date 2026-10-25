@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import '../constants/revenuecat_constants.dart';
 import '../models/relationship_mode.dart';
 import '../models/user_model.dart';
 import '../services/couple_data_store.dart';
@@ -18,6 +17,10 @@ import '../services/time_zone_service.dart';
 class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   final CoupleSyncService _sync;
   final CoupleDataStore _data;
+  final PurchaseGateway _purchases;
+  StreamSubscription<PremiumStatus>? _premiumSubscription;
+  PremiumStatus? _subscription;
+  bool _purchasesLoggedIn = false;
   late UserModel _currentUser;
   String _currentLanguage = 'tr';
   ThemeMode _themeMode = ThemeMode.light;
@@ -37,6 +40,9 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get isDarkMode => _themeMode == ThemeMode.dark;
   bool get hasCompletedSetup => _hasCompletedSetup;
   String? get coupleId => _coupleId;
+
+  /// The user's own store subscription (plan, renewal date, manage link).
+  PremiumStatus? get subscription => _subscription;
 
   /// Incremented when the user leaves a couple or deletes the account, telling
   /// content providers to drop their cache instead of carrying it over.
@@ -101,9 +107,10 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) _publishMyTimeZone();
   }
 
-  AppStateProvider({CoupleSyncService? sync, CoupleDataStore? data})
+  AppStateProvider({CoupleSyncService? sync, CoupleDataStore? data, PurchaseGateway? purchases})
       : _sync = sync ?? FirestoreCoupleSyncService.instance,
-        _data = data ?? FirestoreCoupleDataStore.instance {
+        _data = data ?? FirestoreCoupleDataStore.instance,
+        _purchases = purchases ?? PurchaseService.instance {
     try {
       WidgetsBinding.instance.addObserver(this);
     } catch (_) {
@@ -222,14 +229,13 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       _isLoading = false;
       notifyListeners();
 
-      if (RevenueCatConstants.isConfigured) {
-        PurchaseService.instance.checkPremiumStatus().then((hasPrem) async {
-          if (hasPrem != _currentUser.isPremium) {
-            _currentUser = _currentUser.copyWith(isPremium: hasPrem);
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('ciftapp_is_premium', hasPrem);
-            notifyListeners();
-          }
+      if (_purchases.isConfigured) {
+        // Renewals, expiry, refunds and purchases made outside the app.
+        _premiumSubscription = _purchases.statusChanges.listen(_applyPremiumStatus);
+        // On errors the result is null and the last known value is kept, so a
+        // network problem never takes premium away from a paying user.
+        _purchases.fetchStatus().then((status) {
+          if (status != null) _applyPremiumStatus(status);
         });
       }
     }
@@ -266,6 +272,12 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     NotificationService.instance.subscribeToCouple(_coupleId!);
     _publishMyTimeZone();
+
+    final uid = _sync.currentUid;
+    if (uid != null && !_purchasesLoggedIn && _purchases.isConfigured) {
+      _purchasesLoggedIn = true;
+      unawaited(_purchases.logIn(uid));
+    }
   }
 
   Future<void> _onCoupleUpdate(Map<String, dynamic> data) async {
@@ -621,6 +633,18 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _applyPremiumStatus(PremiumStatus status) async {
+    _subscription = status;
+    final changed = status.isActive != _currentUser.isPremium;
+    if (changed) _currentUser = _currentUser.copyWith(isPremium: status.isActive);
+    notifyListeners();
+    if (changed) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('ciftapp_is_premium', status.isActive);
+    }
+  }
+
+  /// Called right after a successful purchase or restore.
   Future<void> upgradeToPremium() async {
     _currentUser = _currentUser.copyWith(isPremium: true);
     notifyListeners();
@@ -661,6 +685,9 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (previous != coupleId) await _purgeCoupleSpace(previous);
     }
     await _sync.deleteInvite(_currentUser.inviteCode);
+    await _purchases.logOut();
+    _purchasesLoggedIn = false;
+    _subscription = null;
     await _sync.deleteCurrentUser();
 
     _coupleId = null;
@@ -683,6 +710,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       WidgetsBinding.instance.removeObserver(this);
     } catch (_) {}
     _coupleSubscription?.cancel();
+    _premiumSubscription?.cancel();
     super.dispose();
   }
 }
