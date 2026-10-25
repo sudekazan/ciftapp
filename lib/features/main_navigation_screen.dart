@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/app_colors.dart';
 import '../core/localization/app_localizations.dart';
+import '../core/premium/premium_gate.dart';
 import '../core/providers/app_state_provider.dart';
 import '../core/services/notification_service.dart';
+import '../core/services/purchase_service.dart';
 import 'dreams/screens/dreams_screen.dart';
 import 'home/screens/home_screen.dart';
 import 'memories/screens/memories_screen.dart';
@@ -22,13 +24,16 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
   bool _notificationPromptChecked = false;
+  bool _onboardingPromptsDone = false;
 
   static const _notifPromptKey = 'ciftapp_notif_prompted';
+  static const _onboardingPaywallKey = 'ciftapp_onboarding_paywall_shown';
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _runOnboardingPrompts());
   }
 
   @override
@@ -37,9 +42,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Ask for notifications once the user is paired: by then they understand
     // why (partner pulses, answers, memories).
     final isPaired = context.watch<AppStateProvider>().currentUser.isPaired;
-    if (isPaired && !_notificationPromptChecked) {
+    if (_onboardingPromptsDone && isPaired && !_notificationPromptChecked) {
       _notificationPromptChecked = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskForNotifications());
+    }
+  }
+
+  /// Right after setup: a dismissible paywall once (the highest-converting
+  /// moment for couple apps), then the notification prompt. Sequenced so the
+  /// two never overlap.
+  Future<void> _runOnboardingPrompts() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final isPremium = PremiumGate.isPremium(context);
+    if (!(prefs.getBool(_onboardingPaywallKey) ?? false) && !isPremium && PurchaseService.instance.isConfigured) {
+      await prefs.setBool(_onboardingPaywallKey, true);
+      if (!mounted) return;
+      await PremiumGate.openPaywall(context, PaywallSource.onboarding);
+    }
+    if (!mounted) return;
+    _onboardingPromptsDone = true;
+    if (Provider.of<AppStateProvider>(context, listen: false).currentUser.isPaired && !_notificationPromptChecked) {
+      _notificationPromptChecked = true;
+      await _maybeAskForNotifications();
     }
   }
 

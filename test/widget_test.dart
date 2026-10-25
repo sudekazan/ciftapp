@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ciftapp/features/premium/screens/paywall_screen.dart';
 import 'package:ciftapp/main.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,5 +74,27 @@ void main() {
     // Step 4: Verify Pairing space step is active
     expect(find.text('4. Çift Alanı'), findsOneWidget);
     expect(find.text('Çift Alanınızı Başlatalım ✨'), findsOneWidget);
+  });
+
+  testWidgets('a dismissible paywall is shown once right after setup', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'ciftapp_setup_completed': true, 'ciftapp_user_name': 'Sude'});
+
+    // The home screen has live clocks, so pump fixed durations instead of settling.
+    Future<void> pumpFor(int ms) async {
+      for (var i = 0; i < ms ~/ 100; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    await tester.pumpWidget(MultiProvider(providers: appProviders(), child: const CiftApp()));
+    await pumpFor(1500);
+
+    expect(find.byType(PaywallScreen), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await pumpFor(1000);
+    expect(find.byType(PaywallScreen), findsNothing);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('ciftapp_onboarding_paywall_shown'), isTrue);
   });
 }
