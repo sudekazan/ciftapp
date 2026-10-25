@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../features/premium/screens/paywall_screen.dart';
 import '../../features/premium/screens/subscription_screen.dart';
 import '../providers/app_state_provider.dart';
+import '../services/analytics_service.dart';
 
 /// Where a paywall was opened from; used for the contextual headline and
 /// analytics.
@@ -33,6 +34,7 @@ class PremiumGate {
     required PaywallSource source,
   }) async {
     if (allowed) return true;
+    AnalyticsService.log('limit_reached', {'type': source.name});
     await openPaywall(context, source);
     return context.mounted && isPremium(context);
   }

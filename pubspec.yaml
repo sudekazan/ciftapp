@@ -55,6 +55,8 @@ dependencies:
   timezone: ^0.10.1
   firebase_remote_config: ^7.0.0
   package_info_plus: ^9.0.1
+  firebase_analytics: ^13.0.0
+  firebase_crashlytics: ^6.0.0
 
 dev_dependencies:
   flutter_test:

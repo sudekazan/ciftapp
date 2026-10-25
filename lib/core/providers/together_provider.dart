@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../content/question_catalog.dart';
 import '../models/daily_question.dart';
 import '../models/model_json.dart';
+import '../services/analytics_service.dart';
 import '../services/couple_data_store.dart';
 import '../services/local_store.dart';
 import '../services/synced_list.dart';
@@ -326,6 +327,7 @@ class TogetherProvider extends ChangeNotifier with CoupleBoundProvider {
     notifyListeners();
     _save();
     _pushAnswer('answers', _todaysQuestion.id, answer);
+    unawaited(AnalyticsService.log('daily_question_answered', {'partner_answered': _todaysQuestion.isPartnerAnswered ? 1 : 0}));
   }
 
   void toggleWatchlistItem(String id) {

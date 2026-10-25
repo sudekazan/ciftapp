@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../models/relationship_mode.dart';
 import '../premium/limits.dart';
 import '../models/user_model.dart';
+import '../services/analytics_service.dart';
 import '../services/couple_data_store.dart';
 import '../services/couple_sync_service.dart';
 import '../services/local_store.dart';
@@ -330,6 +331,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     _publishPushTarget();
 
     final uid = _sync.currentUid;
+    unawaited(AnalyticsService.setUserId(uid));
     if (uid != null && !_purchasesLoggedIn && _purchases.isConfigured) {
       _purchasesLoggedIn = true;
       unawaited(_purchases.logIn(uid));
@@ -349,6 +351,10 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
         : (data['user1Id'] == partnerId ? data['user1Name'] : data['user2Name']) as String?;
     final paired = partnerId != null;
 
+    if (paired && !_currentUser.isPaired) {
+      // Either side: this user joined, or the partner joined this space.
+      unawaited(AnalyticsService.log('pairing_success'));
+    }
     if (paired != _currentUser.isPaired ||
         partnerName != _currentUser.partnerName ||
         partnerId != _currentUser.partnerId) {
@@ -499,6 +505,7 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     _hasCompletedSetup = true;
     notifyListeners();
+    unawaited(AnalyticsService.log('setup_completed', {'mode': mode.id, 'with_code': isPairingWithCode ? 1 : 0}));
 
     await prefs.setBool('ciftapp_setup_completed', true);
     await prefs.setString('ciftapp_user_name', name);

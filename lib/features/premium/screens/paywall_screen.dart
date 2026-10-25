@@ -9,6 +9,7 @@ import '../../../core/premium/limits.dart';
 import '../../../core/premium/plan_pricing.dart';
 import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../core/services/purchase_service.dart';
 
 enum _OfferingsState { loading, loaded, failed }
@@ -53,6 +54,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.log('paywall_shown', {'source': widget.source.name});
     _loadOfferings();
   }
 
@@ -100,6 +102,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
       switch (outcome) {
         case PurchaseOutcome.success:
+          final trialDays = _trialDays[selectedPackage.identifier];
+          AnalyticsService.log(trialDays != null ? 'trial_started' : 'purchase', {
+            'product': selectedPackage.storeProduct.identifier,
+            'source': widget.source.name,
+          });
           await appState.upgradeToPremium();
           if (!mounted) return;
           Navigator.of(context).pop();

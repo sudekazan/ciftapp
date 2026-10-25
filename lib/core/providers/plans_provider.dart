@@ -65,6 +65,7 @@ class PlansProvider extends ChangeNotifier with CoupleBoundProvider {
     if (assigned == 'both' || author == null || author == dataStore.currentUid) return assigned;
     return assigned == 'me' ? 'partner' : 'me';
   }
+
   int get pendingShoppingCount => shoppingList.where((s) => !s.isBought).length;
 
   Future<void> _load() async {
