@@ -29,6 +29,8 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
   final List<String> _tags = [];
 
   final ImagePicker _picker = ImagePicker();
+  static const double _maxPhotoSide = 2048;
+  static const int _photoQuality = 80;
   bool _isSaving = false;
 
   final List<String> _moodOptions = [
@@ -71,9 +73,25 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
       return;
     }
     try {
+      // Downscaled and compressed: full-resolution photos are slow to sync and
+      // costly to store, and 2048px is plenty for a phone screen.
       final List<XFile> images = remaining == 1
-          ? [if (await _picker.pickImage(source: ImageSource.gallery) case final image?) image]
-          : await _picker.pickMultiImage(limit: remaining);
+          ? [
+              if (await _picker.pickImage(
+                source: ImageSource.gallery,
+                maxWidth: _maxPhotoSide,
+                maxHeight: _maxPhotoSide,
+                imageQuality: _photoQuality,
+              )
+                  case final image?)
+                image,
+            ]
+          : await _picker.pickMultiImage(
+              limit: remaining,
+              maxWidth: _maxPhotoSide,
+              maxHeight: _maxPhotoSide,
+              imageQuality: _photoQuality,
+            );
       if (images.isNotEmpty) {
         setState(() {
           for (final img in images.take(remaining)) {
