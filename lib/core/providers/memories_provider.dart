@@ -105,9 +105,10 @@ class MemoriesProvider extends ChangeNotifier with CoupleBoundProvider {
     }
   }
 
-  /// Clears all in-memory and persisted data (account deletion).
+  /// Clears this device's data (account deletion). Cloud photos are removed
+  /// with the couple space; the partner keeps shared memories.
   Future<void> clearAll() async {
-    await PhotoStorage.delete(_memories.items.expand((m) => m.imageUrls));
+    await PhotoStorage.deleteLocal(_memories.items.expand((m) => m.imageUrls.map(PhotoStorage.resolveSync)));
     for (final list in syncedLists) {
       await list.clearLocal();
     }

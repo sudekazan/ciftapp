@@ -4,6 +4,7 @@ import 'package:ciftapp/core/services/couple_sync_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fakes/fake_couple_data_store.dart';
 import 'fakes/fake_couple_sync.dart';
 
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 50));
@@ -239,6 +240,50 @@ void main() {
       expect(couple['reunionLocation'], 'Paris');
       expect(couple['mode'], 'co_living');
       expect(couple['user2Name'], 'Sude');
+    });
+  
+    test('deleting the account while paired keeps shared data for the partner', () async {
+      final cloud = FakeCloud();
+      cloud.col('cpl_p', 'memories')['m1'] = {'id': 'm1', 'title': 'Ortak'};
+      cloud.col('cpl_p', 'answers')['q1'] = {'me': 'Benim cevabım', 'partner': 'Onun cevabı'};
+      final state = AppStateProvider(sync: backend, data: FakeCoupleDataStore(cloud, uid: 'me'));
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      await state.deleteAccount();
+
+      expect(backend.couples['cpl_p']!['memberIds'], ['partner']);
+      expect(cloud.col('cpl_p', 'memories'), contains('m1'));
+      expect(cloud.col('cpl_p', 'answers')['q1'], {'partner': 'Onun cevabı'});
+      expect(backend.deletedUsers, ['me']);
+      expect(state.hasCompletedSetup, isFalse);
+      expect(state.coupleId, isNull);
+    });
+
+    test('deleting the account while alone wipes the couple space and old spaces', () async {
+      final cloud = FakeCloud();
+      final state = AppStateProvider(sync: backend, data: FakeCoupleDataStore(cloud, uid: 'me'));
+      await settle();
+      await state.completeInitialSetup(name: 'Ben', mode: RelationshipMode.longDistance);
+      await settle();
+      final soloSpace = state.coupleId!;
+      cloud.col(soloSpace, 'tasks')['t1'] = {'id': 't1', 'title': 'Görev'};
+
+      // Joined a partner later, then the partner left.
+      await state.pairWithCode('CFT-ABCDEF');
+      await state.unpairCouple();
+      await settle();
+      final currentSpace = state.coupleId!;
+      final inviteCode = state.currentUser.inviteCode;
+
+      await state.deleteAccount();
+
+      expect(backend.couples.containsKey(soloSpace), isFalse);
+      expect(backend.couples.containsKey(currentSpace), isFalse);
+      expect(cloud.col(soloSpace, 'tasks'), isEmpty);
+      expect(backend.invites.containsKey(inviteCode), isFalse);
+      expect(backend.deletedUsers, ['me']);
     });
   });
 }

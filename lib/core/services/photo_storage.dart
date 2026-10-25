@@ -129,6 +129,23 @@ class PhotoStorage {
     return '$dir/${path.substring(index + marker.length)}';
   }
 
+  /// Deletes every photo of a couple space from Cloud Storage (account deletion).
+  static Future<void> deleteCoupleFolder(String coupleId) async {
+    if (Firebase.apps.isEmpty) return;
+    try {
+      final result = await FirebaseStorage.instance.ref('couples/$coupleId/memories').listAll();
+      for (final item in result.items) {
+        await item.delete();
+      }
+    } catch (e) {
+      debugPrint('PhotoStorage: failed to delete couple folder $coupleId: $e');
+    }
+  }
+
+  /// Deletes this device's local photo copies (cloud files are untouched).
+  static Future<void> deleteLocal(Iterable<String> paths) =>
+      delete(paths.where((p) => !p.startsWith('http')));
+
   /// Best-effort deletion of stored photo files (both local and cloud).
   static Future<void> delete(Iterable<String> paths) async {
     for (final path in paths) {

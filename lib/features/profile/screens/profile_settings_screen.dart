@@ -77,43 +77,90 @@ class ProfileSettingsScreen extends StatelessWidget {
   void _showDeleteAccountDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final appState = Provider.of<AppStateProvider>(context, listen: false);
+    var isDeleting = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.text('delete_account')),
-        content: Text(l10n.text('delete_account_warning')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.text('cancel')),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () async {
-              final nav = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
-              final memories = Provider.of<MemoriesProvider>(context, listen: false);
-              final dreams = Provider.of<DreamsProvider>(context, listen: false);
-              final plans = Provider.of<PlansProvider>(context, listen: false);
-              final together = Provider.of<TogetherProvider>(context, listen: false);
-              await memories.clearAll();
-              await together.clearAll();
-              await dreams.clearAll();
-              await plans.clearAll();
-              await appState.deleteAccount();
-              if (ctx.mounted) Navigator.pop(ctx);
-              nav.popUntil((route) => route.isFirst);
-              messenger.showSnackBar(
-                const SnackBar(
-                  content: Text('Hesabınız ve tüm verileriniz başarıyla silindi.'),
-                  backgroundColor: Colors.redAccent,
-                ),
-              );
-            },
-            child: const Text('Kalıcı Olarak Sil'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(l10n.text('delete_account')),
+          content: isDeleting
+              ? const SizedBox(height: 64, child: Center(child: CircularProgressIndicator()))
+              : Text(l10n.text('delete_account_warning')),
+          actions: isDeleting
+              ? null
+              : [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.text('cancel')),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                    onPressed: () async {
+                      setDialogState(() => isDeleting = true);
+                      final nav = Navigator.of(context);
+                      final messenger = ScaffoldMessenger.of(context);
+                      final memories = Provider.of<MemoriesProvider>(context, listen: false);
+                      final dreams = Provider.of<DreamsProvider>(context, listen: false);
+                      final plans = Provider.of<PlansProvider>(context, listen: false);
+                      final together = Provider.of<TogetherProvider>(context, listen: false);
+                      await appState.deleteAccount();
+                      await memories.clearAll();
+                      await together.clearAll();
+                      await dreams.clearAll();
+                      await plans.clearAll();
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      nav.popUntil((route) => route.isFirst);
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.text('delete_account_done')),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    },
+                    child: Text(l10n.text('delete_permanently')),
+                  ),
+                ],
+        ),
+      ),
+    );
+  }
+
+  void _showUnpairDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    var isWorking = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(l10n.text('unpair_title')),
+          content: isWorking
+              ? const SizedBox(height: 64, child: Center(child: CircularProgressIndicator()))
+              : Text(l10n.text('unpair_warning')),
+          actions: isWorking
+              ? null
+              : [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.text('cancel')),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                    onPressed: () async {
+                      setDialogState(() => isWorking = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      await appState.unpairCouple();
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      messenger.showSnackBar(SnackBar(content: Text(l10n.text('unpair_done'))));
+                    },
+                    child: Text(l10n.text('unpair_btn')),
+                  ),
+                ],
+        ),
       ),
     );
   }
@@ -357,6 +404,14 @@ class ProfileSettingsScreen extends StatelessWidget {
                     );
                   },
                 ),
+                if (user.isPaired) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.heart_broken_outlined, color: Colors.redAccent),
+                    title: Text(l10n.text('unpair_title'), style: const TextStyle(color: Colors.redAccent)),
+                    onTap: () => _showUnpairDialog(context),
+                  ),
+                ],
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),

@@ -73,6 +73,17 @@ abstract class CoupleSyncService {
 
   /// Removes the current user from the couple; the partner keeps the space.
   Future<void> leaveCouple(String coupleId);
+
+  /// Number of members of [coupleId] (0 if it does not exist or is unreadable).
+  Future<int> memberCount(String coupleId);
+
+  /// Deletes the couple document (allowed only for its last member).
+  Future<void> deleteCouple(String coupleId);
+
+  Future<void> deleteInvite(String inviteCode);
+
+  /// Deletes the Firebase Auth user (account deletion).
+  Future<void> deleteCurrentUser();
 }
 
 /// Real-time couple synchronization backed by Cloud Firestore.
@@ -276,6 +287,52 @@ class FirestoreCoupleSyncService implements CoupleSyncService {
       });
     } catch (e) {
       debugPrint('CoupleSyncService: leaveCouple error: $e');
+    }
+  }
+
+  @override
+  Future<int> memberCount(String coupleId) async {
+    if (await _ensureUid() == null) return 0;
+    try {
+      final data = (await _couple(coupleId).get()).data();
+      return (data?['memberIds'] as List?)?.length ?? 0;
+    } catch (e) {
+      debugPrint('CoupleSyncService: memberCount error: $e');
+      return 0;
+    }
+  }
+
+  @override
+  Future<void> deleteCouple(String coupleId) async {
+    if (await _ensureUid() == null) return;
+    try {
+      await _couple(coupleId).delete();
+    } catch (e) {
+      debugPrint('CoupleSyncService: deleteCouple error: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteInvite(String inviteCode) async {
+    if (await _ensureUid() == null) return;
+    try {
+      await _db.collection('invites').doc(inviteCode).delete();
+    } catch (e) {
+      debugPrint('CoupleSyncService: deleteInvite error: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteCurrentUser() async {
+    if (!_online) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      // e.g. requires-recent-login for linked accounts: at least sign out.
+      debugPrint('CoupleSyncService: deleteCurrentUser error: ${e.code}');
+      await FirebaseAuth.instance.signOut();
     }
   }
 }

@@ -40,6 +40,9 @@ abstract class CoupleDataStore {
 
   /// Deletes every document of every known collection (account deletion).
   Future<void> deleteAll(String coupleId);
+
+  /// Removes the [field] (a partner uid) from every document of [collection].
+  Future<void> deleteFieldEverywhere(String coupleId, String collection, String field);
 }
 
 class FirestoreCoupleDataStore implements CoupleDataStore {
@@ -113,6 +116,19 @@ class FirestoreCoupleDataStore implements CoupleDataStore {
         }
         await batch.commit();
       }
+    }
+  }
+
+  @override
+  Future<void> deleteFieldEverywhere(String coupleId, String collection, String field) async {
+    if (!_online) return;
+    final docs = await _col(coupleId, collection).get();
+    for (var i = 0; i < docs.docs.length; i += 400) {
+      final batch = FirebaseFirestore.instance.batch();
+      for (final d in docs.docs.skip(i).take(400)) {
+        if (d.data().containsKey(field)) batch.update(d.reference, {field: FieldValue.delete()});
+      }
+      await batch.commit();
     }
   }
 }

@@ -7,13 +7,17 @@ import 'package:uuid/uuid.dart';
 import '../constants/revenuecat_constants.dart';
 import '../models/relationship_mode.dart';
 import '../models/user_model.dart';
+import '../services/couple_data_store.dart';
 import '../services/couple_sync_service.dart';
+import '../services/local_store.dart';
 import '../services/notification_service.dart';
+import '../services/photo_storage.dart';
 import '../services/purchase_service.dart';
 import '../services/time_zone_service.dart';
 
 class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   final CoupleSyncService _sync;
+  final CoupleDataStore _data;
   late UserModel _currentUser;
   String _currentLanguage = 'tr';
   ThemeMode _themeMode = ThemeMode.light;
@@ -97,8 +101,9 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) _publishMyTimeZone();
   }
 
-  AppStateProvider({CoupleSyncService? sync})
-      : _sync = sync ?? FirestoreCoupleSyncService.instance {
+  AppStateProvider({CoupleSyncService? sync, CoupleDataStore? data})
+      : _sync = sync ?? FirestoreCoupleSyncService.instance,
+        _data = data ?? FirestoreCoupleDataStore.instance {
     try {
       WidgetsBinding.instance.addObserver(this);
     } catch (_) {
@@ -537,8 +542,11 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> pairWithCode(String code) async {
     final result = await _pairOrThrow(code, _currentUser.name);
     _coupleSubscription?.cancel();
-    if (_coupleId != null) {
+    if (_coupleId != null && _coupleId != result.coupleId) {
       NotificationService.instance.unsubscribeFromCouple(_coupleId!);
+      // Content moves to the partner's space; the old solo space is purged
+      // with the account later (its photo URLs are still referenced).
+      await _rememberPreviousCouple(_coupleId!);
     }
     _coupleId = result.coupleId;
     final resolvedPartner = result.partnerName;
@@ -592,6 +600,27 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _createOwnSpace();
   }
 
+  static const _previousCouplesKey = 'ciftapp_previous_couples';
+
+  Future<void> _rememberPreviousCouple(String coupleId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_previousCouplesKey) ?? [];
+    if (!list.contains(coupleId)) {
+      await prefs.setStringList(_previousCouplesKey, [...list, coupleId]);
+    }
+  }
+
+  /// Deletes a couple space this user is the last member of.
+  Future<void> _purgeCoupleSpace(String coupleId) async {
+    try {
+      await _data.deleteAll(coupleId);
+      await PhotoStorage.deleteCoupleFolder(coupleId);
+      await _sync.deleteCouple(coupleId);
+    } catch (e) {
+      debugPrint('Purge couple space $coupleId error: $e');
+    }
+  }
+
   Future<void> upgradeToPremium() async {
     _currentUser = _currentUser.copyWith(isPremium: true);
     notifyListeners();
@@ -599,18 +628,47 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
     await prefs.setBool('ciftapp_is_premium', true);
   }
 
+  /// Deletes the account and its cloud data (Apple 5.1.1(v), KVKK).
+  ///
+  /// - With a partner: this user leaves the couple and their answers are
+  ///   removed; the partner keeps the shared memories.
+  /// - Alone: the whole couple space (content, photos, document) is deleted.
+  /// Finally the invite code, the Firebase Auth user and local data go.
   Future<void> deleteAccount() async {
     _coupleSubscription?.cancel();
-    if (_coupleId != null) {
-      await _sync.leaveCouple(_coupleId!);
-      NotificationService.instance.unsubscribeFromCouple(_coupleId!);
-      _coupleId = null;
-    }
-
     final prefs = await SharedPreferences.getInstance();
+    final myUid = _sync.currentUid;
+    final coupleId = _coupleId;
+
+    if (coupleId != null) {
+      NotificationService.instance.unsubscribeFromCouple(coupleId);
+      if (await _sync.memberCount(coupleId) > 1) {
+        if (myUid != null) {
+          for (final collection in const ['answers', 'quiz', 'whoMore']) {
+            try {
+              await _data.deleteFieldEverywhere(coupleId, collection, myUid);
+            } catch (e) {
+              debugPrint('Delete answers error: $e');
+            }
+          }
+        }
+        await _sync.leaveCouple(coupleId);
+      } else {
+        await _purgeCoupleSpace(coupleId);
+      }
+    }
+    for (final previous in prefs.getStringList(_previousCouplesKey) ?? const <String>[]) {
+      if (previous != coupleId) await _purgeCoupleSpace(previous);
+    }
+    await _sync.deleteInvite(_currentUser.inviteCode);
+    await _sync.deleteCurrentUser();
+
+    _coupleId = null;
+    await LocalStore.clearAll();
     await prefs.clear();
     _dataGeneration++;
     _hasCompletedSetup = false;
+    _inviteEnsured = false;
     _partnerUtcOffsetMinutes = null;
     _partnerTimeZoneName = null;
     _partnerPublishedOffset = null;

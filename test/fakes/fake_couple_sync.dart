@@ -133,4 +133,25 @@ class FakeCoupleSyncService implements CoupleSyncService {
       ..['user2Name'] = null;
     _emit(coupleId);
   }
+
+  @override
+  Future<int> memberCount(String coupleId) async =>
+      (couples[coupleId]?['memberIds'] as List?)?.length ?? 0;
+
+  @override
+  Future<void> deleteCouple(String coupleId) async {
+    couples.remove(coupleId);
+  }
+
+  @override
+  Future<void> deleteInvite(String inviteCode) async {
+    if (invites[inviteCode]?['ownerId'] == uid) invites.remove(inviteCode);
+  }
+
+  final List<String> deletedUsers = [];
+
+  @override
+  Future<void> deleteCurrentUser() async {
+    deletedUsers.add(uid);
+  }
 }

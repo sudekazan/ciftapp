@@ -70,4 +70,12 @@ class FakeCoupleDataStore implements CoupleDataStore {
       cloud.emit(coupleId, c);
     }
   }
+
+  @override
+  Future<void> deleteFieldEverywhere(String coupleId, String collection, String field) async {
+    for (final doc in cloud.col(coupleId, collection).values) {
+      doc.remove(field);
+    }
+    cloud.emit(coupleId, collection);
+  }
 }
