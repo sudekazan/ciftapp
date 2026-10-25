@@ -243,18 +243,28 @@ class AppStateProvider extends ChangeNotifier {
 
     // Live heartbeat / Thinking of You pulse
     final pulse = data['lastThinkingOfYou'];
-    if (pulse is Map<String, dynamic>) {
-      final senderName = pulse['senderName'] as String? ?? 'Partner';
-      final pulseTimeStr = pulse['iso'] as String?;
-      final pulseTime = pulseTimeStr != null ? DateTime.tryParse(pulseTimeStr) : null;
+    if (pulse is Map) await _handlePulse(Map<String, dynamic>.from(pulse), myUid);
+  }
 
-      if (senderName != _currentUser.name && pulseTime != null) {
-        if (_currentUser.lastThinkingOfYou == null ||
-            pulseTime.isAfter(_currentUser.lastThinkingOfYou!)) {
-          receivePartnerThinkingOfYou();
-        }
-      }
+  static const _lastPulseSeenKey = 'ciftapp_last_pulse_seen';
+
+  /// Shows a partner pulse once. The last seen pulse time is persisted so the
+  /// first snapshot after a restart does not replay an old pulse.
+  Future<void> _handlePulse(Map<String, dynamic> pulse, String myUid) async {
+    final senderId = pulse['senderId'] as String?;
+    final pulseTime = DateTime.tryParse(pulse['iso'] as String? ?? '');
+    if (senderId == null || senderId == myUid || pulseTime == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastSeen = DateTime.tryParse(prefs.getString(_lastPulseSeenKey) ?? '');
+    if (lastSeen != null && !pulseTime.isAfter(lastSeen)) return;
+    await prefs.setString(_lastPulseSeenKey, pulseTime.toIso8601String());
+
+    // Fresh install / first sync: only surface pulses that are still recent.
+    if (lastSeen == null && DateTime.now().difference(pulseTime) > const Duration(minutes: 5)) {
+      return;
     }
+    receivePartnerThinkingOfYou(at: pulseTime.toLocal());
   }
 
   /// Finishes onboarding. When [partnerCode] is given the pairing must succeed:
@@ -395,10 +405,10 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  void receivePartnerThinkingOfYou() {
+  void receivePartnerThinkingOfYou({DateTime? at}) {
     HapticFeedback.mediumImpact();
     _currentUser = _currentUser.copyWith(
-      lastThinkingOfYou: DateTime.now(),
+      lastThinkingOfYou: at ?? DateTime.now(),
       lastThinkingSender: _currentUser.partnerName ?? 'Partner',
     );
     notifyListeners();

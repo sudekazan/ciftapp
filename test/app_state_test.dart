@@ -9,6 +9,8 @@ import 'fakes/fake_couple_sync.dart';
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 50));
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
@@ -154,6 +156,45 @@ void main() {
       expect(state.currentUser.isPaired, isFalse);
       // Invite code now points at the remaining space so a new partner can join.
       expect(backend.invites[state.currentUser.inviteCode]!['coupleId'], 'cpl_p');
+    });
+  
+    Map<String, dynamic> pulse(String sender, DateTime at) => {
+          'lastThinkingOfYou': {
+            'senderId': sender,
+            'senderName': 'Ben', // same name as the user on purpose
+            'iso': at.toUtc().toIso8601String(),
+          },
+        };
+
+    test('partner pulse is shown once and not replayed after restart', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      await state.updateUserName('Ben');
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      final sentAt = DateTime.now();
+      backend.remoteUpdate('cpl_p', pulse('partner', sentAt));
+      await settle();
+      expect(state.currentUser.lastThinkingSender, 'Ayşe',
+          reason: 'sender is identified by uid, not by name');
+
+      // App restart: the same pulse arrives in the first snapshot again.
+      final restarted = AppStateProvider(sync: backend);
+      await settle();
+      await settle();
+      expect(restarted.currentUser.lastThinkingOfYou, isNull);
+    });
+
+    test('own pulse is not treated as a partner pulse', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      backend.remoteUpdate('cpl_p', pulse('me', DateTime.now()));
+      await settle();
+      expect(state.currentUser.lastThinkingOfYou, isNull);
     });
   });
 }
