@@ -10,6 +10,7 @@ import '../../../core/premium/limits.dart';
 import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/memories_provider.dart';
 import '../../../core/services/photo_storage.dart';
+import '../../../core/services/review_service.dart';
 
 class AddMemoryScreen extends StatefulWidget {
   const AddMemoryScreen({super.key});
@@ -158,6 +159,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
         imageUrls: persistedPaths,
         tags: List<String>.from(_tags),
       );
+      ReviewService.maybeRequestAfterMemory(memoriesProvider.memories.length);
 
       if (!mounted) return;
       navigator.pop();
