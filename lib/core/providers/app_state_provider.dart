@@ -43,6 +43,10 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get hasCompletedSetup => _hasCompletedSetup;
   String? get coupleId => _coupleId;
 
+  /// When the current pairing was made (from the couple document).
+  DateTime? _pairedSince;
+  DateTime? get pairedSince => _currentUser.isPaired ? _pairedSince : null;
+
   /// The user's own store subscription (plan, renewal date, manage link).
   PremiumStatus? get subscription => _subscription;
 
@@ -364,6 +368,11 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
     }
 
+    final pairedAt = _parseTime(data['pairedAt']);
+    if (pairedAt != _pairedSince) {
+      _pairedSince = pairedAt;
+      notifyListeners();
+    }
     await _applySharedSettings(data, partnerId);
     await _applyCouplePremium(data);
 

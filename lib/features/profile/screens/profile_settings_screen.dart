@@ -319,13 +319,24 @@ class ProfileSettingsScreen extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.favorite_outline_rounded, color: AppColors.primary),
                   title: Text(l10n.text('partner_pairing')),
-                  subtitle: Text(user.isPaired ? '${l10n.text('your_invite_code')}: ${user.inviteCode}' : l10n.text('unpaired_warning')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PairingScreen(isModal: true)),
-                    );
-                  },
+                  // A paired user's own invite code is no longer valid: show the partner instead.
+                  subtitle: Text(user.isPaired
+                      ? [
+                          l10n.textf('paired_with', {'name': user.partnerName ?? 'Partner'}),
+                          if (appState.pairedSince case final since?)
+                            l10n.textf('paired_since', {
+                              'date': DateFormat('d MMMM yyyy', appState.currentLanguage).format(since),
+                            }),
+                        ].join('\n')
+                      : l10n.text('unpaired_warning')),
+                  trailing: user.isPaired ? null : const Icon(Icons.chevron_right_rounded),
+                  onTap: user.isPaired
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const PairingScreen(isModal: true)),
+                          );
+                        },
                 ),
                 const Divider(height: 1),
                 ListTile(
