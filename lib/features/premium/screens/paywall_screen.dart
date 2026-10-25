@@ -14,6 +14,8 @@ import '../../../core/services/purchase_service.dart';
 
 enum _OfferingsState { loading, loaded, failed }
 
+enum _Plan { yearly, monthly, lifetime }
+
 class PaywallScreen extends StatefulWidget {
   final PaywallSource source;
   final PurchaseGateway? purchases;
@@ -42,14 +44,19 @@ class PaywallScreen extends StatefulWidget {
 class _PaywallScreenState extends State<PaywallScreen> {
   late final PurchaseGateway _purchases = widget.purchases ?? PurchaseService.instance;
 
-  bool _yearlySelected = true; // Yearly is the main product.
+  _Plan _selectedPlan = _Plan.yearly; // Yearly is the main product.
   bool _isLoading = false;
   _OfferingsState _offeringsState = _OfferingsState.loading;
   Package? _monthlyPackage;
   Package? _yearlyPackage;
+  Package? _lifetimePackage;
   final Map<String, int?> _trialDays = {};
 
-  Package? get _selectedPackage => _yearlySelected ? _yearlyPackage : _monthlyPackage;
+  Package? get _selectedPackage => switch (_selectedPlan) {
+        _Plan.yearly => _yearlyPackage,
+        _Plan.monthly => _monthlyPackage,
+        _Plan.lifetime => _lifetimePackage,
+      };
 
   @override
   void initState() {
@@ -63,6 +70,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final current = _purchases.isConfigured ? (await _purchases.getOfferings())?.current : null;
     final monthly = current?.monthly;
     final yearly = current?.annual;
+    // Optional one-time purchase; shown only if configured in RevenueCat.
+    final lifetime = current?.lifetime;
     // Trial text depends on whether this user can still get the trial.
     for (final package in [monthly, yearly].whereType<Package>()) {
       _trialDays[package.identifier] = await _purchases.eligibleTrialDays(package);
@@ -71,9 +80,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() {
       _monthlyPackage = monthly;
       _yearlyPackage = yearly;
-      _offeringsState =
-          monthly == null && yearly == null ? _OfferingsState.failed : _OfferingsState.loaded;
-      if (yearly == null) _yearlySelected = false;
+      _lifetimePackage = lifetime;
+      _offeringsState = monthly == null && yearly == null && lifetime == null
+          ? _OfferingsState.failed
+          : _OfferingsState.loaded;
+      if (yearly == null) _selectedPlan = monthly != null ? _Plan.monthly : _Plan.lifetime;
     });
   }
 
@@ -309,7 +320,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 l10n.textf('trial_info', {
                   'n': trialDays,
                   'price': '${selected.storeProduct.priceString} / '
-                      '${l10n.text(_yearlySelected ? 'per_year' : 'per_month')}',
+                      '${l10n.text(_selectedPlan == _Plan.yearly ? 'per_year' : 'per_month')}',
                 }),
                 style: TextStyle(fontSize: 11, color: secondaryText, height: 1.4),
                 textAlign: TextAlign.center,
@@ -377,8 +388,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
         return [
           if (yearly != null)
             _planTile(
-              isSelected: _yearlySelected,
-              onTap: () => setState(() => _yearlySelected = true),
+              isSelected: _selectedPlan == _Plan.yearly,
+              onTap: () => setState(() => _selectedPlan = _Plan.yearly),
               title: l10n.text('yearly_plan'),
               badge: savings == null ? null : l10n.textf('plan_savings_badge', {'p': savings}),
               detail: () {
@@ -397,11 +408,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ),
           if (monthly != null)
             _planTile(
-              isSelected: !_yearlySelected,
-              onTap: () => setState(() => _yearlySelected = false),
+              isSelected: _selectedPlan == _Plan.monthly,
+              onTap: () => setState(() => _selectedPlan = _Plan.monthly),
               title: l10n.text('monthly_plan'),
               detail: l10n.text('plan_renews_monthly'),
               price: '${monthly.storeProduct.priceString} / ${l10n.text('per_month')}',
+              isDark: isDark,
+              secondaryText: secondaryText,
+            ),
+          if (_lifetimePackage case final lifetime?)
+            _planTile(
+              isSelected: _selectedPlan == _Plan.lifetime,
+              onTap: () => setState(() => _selectedPlan = _Plan.lifetime),
+              title: l10n.text('lifetime_plan'),
+              detail: l10n.text('plan_lifetime_detail'),
+              price: lifetime.storeProduct.priceString,
               isDark: isDark,
               secondaryText: secondaryText,
             ),

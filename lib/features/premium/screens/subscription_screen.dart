@@ -61,7 +61,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ? 'subscription_plan_yearly'
           : productId.contains('month')
               ? 'subscription_plan_monthly'
-              : 'subscription_plan_unknown');
+              : productId.contains('lifetime')
+                  ? 'lifetime_plan'
+                  : 'subscription_plan_unknown');
       final expires = subscription?.expiresAt;
       statusLine = expires == null
           ? null

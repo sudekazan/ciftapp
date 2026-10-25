@@ -480,6 +480,10 @@ class AppLocalizations {
       'account_signin_title': 'Hesabına giriş yap',
       'account_signin_desc': 'Daha önce bağladığın Apple veya Google hesabıyla giriş yap; çift alanın geri yüklenecek.',
       'account_signin_no_space': 'Bu hesaba bağlı bir çift alanı bulunamadı.',
+
+      // Ömür boyu plan
+      'lifetime_plan': 'Ömür Boyu Premium',
+      'plan_lifetime_detail': 'Tek seferlik ödeme, yenileme yok • Hediye için ideal',
     },
     'en': {
       'app_name': 'Yanyana',
@@ -947,6 +951,10 @@ class AppLocalizations {
       'account_signin_title': 'Sign in to your account',
       'account_signin_desc': 'Sign in with the Apple or Google account you linked to restore your couple space.',
       'account_signin_no_space': 'No couple space was found for this account.',
+
+      // Ömür boyu plan
+      'lifetime_plan': 'Lifetime Premium',
+      'plan_lifetime_detail': 'One-time payment, no renewals • A perfect gift',
     },
   };
 
