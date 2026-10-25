@@ -149,7 +149,7 @@ class DistanceHeaderCard extends StatelessWidget {
               // Partner Avatar or Add Partner Button
               if (user.isPaired)
                 _buildAvatar(
-                  name: user.partnerName ?? 'Partner',
+                  name: user.partnerName ?? l10n.text('partner'),
                   isMe: false,
                   isDark: isDark,
                 )
@@ -210,7 +210,7 @@ class DistanceHeaderCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Senin Davet Kodun:', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                        Text(l10n.text('setup_your_code'), style: const TextStyle(color: Colors.white70, fontSize: 11)),
                         Text(
                           user.inviteCode,
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
@@ -222,15 +222,15 @@ class DistanceHeaderCard extends StatelessWidget {
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: user.inviteCode));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Davet kodun kopyalandı! Partnerine gönder ❤️'),
+                        SnackBar(
+                          content: Text(l10n.text('invite_copied_send')),
                           backgroundColor: AppColors.primary,
-                          duration: Duration(seconds: 2),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     },
                     icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.primary),
-                    label: const Text('Kopyala', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: Text(l10n.text('copy'), style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

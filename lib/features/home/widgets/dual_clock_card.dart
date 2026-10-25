@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 
 class DualClockCard extends StatefulWidget {
@@ -48,9 +49,12 @@ class _DualClockCardState extends State<DualClockCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Partnerinin saat dilimi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                AppLocalizations.of(context).text('clock_pick_partner_zone'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
             SizedBox(
               height: 320,
@@ -80,18 +84,21 @@ class _DualClockCardState extends State<DualClockCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final appState = context.watch<AppStateProvider>();
+    final l10n = AppLocalizations.of(context);
 
     final myTime = _now;
     final myOffset = _now.timeZoneOffset.inMinutes;
     final partnerOffset = appState.partnerUtcOffsetMinutes;
     final diffMinutes = partnerOffset - myOffset;
     final partnerTime = _now.toUtc().add(Duration(minutes: partnerOffset));
-    final partnerLabel = appState.currentUser.partnerName ?? 'Partnerin';
+    final partnerLabel = appState.currentUser.partnerName ?? l10n.text('partner');
 
     final diffHours = diffMinutes / 60;
     final diffText = diffMinutes == 0
-        ? 'Aynı saat'
-        : '${diffMinutes > 0 ? '+' : ''}${diffHours == diffHours.roundToDouble() ? diffHours.toInt() : diffHours} Saat Farkı';
+        ? l10n.text('clock_same_time')
+        : l10n.textf('clock_diff', {
+            'h': '${diffMinutes > 0 ? '+' : ''}${diffHours == diffHours.roundToDouble() ? diffHours.toInt() : diffHours}',
+          });
 
     final timeFormatter = DateFormat('HH:mm');
 
@@ -116,7 +123,7 @@ class _DualClockCardState extends State<DualClockCard> {
                   const Icon(Icons.schedule_rounded, color: AppColors.secondary, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'İki Şehir, Tek Kalp',
+                    l10n.text('clock_title'),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
@@ -161,7 +168,7 @@ class _DualClockCardState extends State<DualClockCard> {
                           const Icon(Icons.location_on_rounded, size: 14, color: AppColors.primary),
                           const SizedBox(width: 4),
                           Text(
-                            'Sen',
+                            l10n.text('you'),
                             style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -177,7 +184,7 @@ class _DualClockCardState extends State<DualClockCard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Senin Saatin',
+                        l10n.text('my_time'),
                         style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
                       ),
                     ],
@@ -231,8 +238,8 @@ class _DualClockCardState extends State<DualClockCard> {
                       const SizedBox(height: 4),
                       Text(
                         appState.hasPartnerTimeZone
-                            ? (isPartnerDaytime ? 'Gündüz Vakti ☀️' : 'Uyuyor Olabilir 🌙')
-                            : 'Saat dilimini seç',
+                            ? l10n.text(isPartnerDaytime ? 'clock_partner_day' : 'clock_partner_night')
+                            : l10n.text('clock_pick_zone'),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 11,
                           color: isPartnerDaytime ? AppColors.accentGold : AppColors.secondary,

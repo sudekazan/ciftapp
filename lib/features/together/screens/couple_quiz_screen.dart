@@ -27,7 +27,7 @@ class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
     final quizList = togetherProvider.quizIn(_packId);
     final matchCount = quizList.where((q) => q.isMatch).length;
     final bothAnswered = quizList.where((q) => q.isBothAnswered).length;
-    final partnerName = appState.currentUser.partnerName ?? 'Can';
+    final partnerName = appState.currentUser.partnerName ?? l10n.text('partner');
 
     return Scaffold(
       appBar: AppBar(
@@ -61,7 +61,7 @@ class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Uyum Skoru: %${bothAnswered == 0 ? 0 : ((matchCount / bothAnswered) * 100).round()}',
+                          l10n.textf('quiz_score', {'p': bothAnswered == 0 ? 0 : ((matchCount / bothAnswered) * 100).round()}),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -70,7 +70,7 @@ class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$matchCount / $bothAnswered soruda aynı cevabı verdiniz! 🎉',
+                          l10n.textf('quiz_score_sub', {'n': matchCount, 'total': bothAnswered}),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.85),
                             fontSize: 13,
@@ -109,7 +109,7 @@ class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Soru ${index + 1}',
+                            l10n.textf('question_n', {'n': index + 1}),
                             style: const TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -123,12 +123,12 @@ class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
                                 color: AppColors.accentTeal.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Row(
+                              child: Row(
                                 children: [
                                   Icon(Icons.favorite_rounded, color: AppColors.accentTeal, size: 12),
                                   SizedBox(width: 4),
                                   Text(
-                                    'Eşleşti!',
+                                    l10n.text('quiz_matched'),
                                     style: TextStyle(color: AppColors.accentTeal, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                 ],
@@ -183,7 +183,7 @@ class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
                                       color: AppColors.primary,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text('Sen', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                    child: Text(l10n.text('you'), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                   ),
                                 if (isPartnerChoice) ...[
                                   const SizedBox(width: 4),

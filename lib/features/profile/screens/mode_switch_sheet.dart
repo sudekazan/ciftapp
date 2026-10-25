@@ -51,8 +51,8 @@ class ModeSwitchSheet extends StatelessWidget {
           _buildModeTile(
             context: context,
             mode: RelationshipMode.longDistance,
-            title: 'Uzak Mesafe Modu',
-            desc: 'İki saat dilimi, buluşma geri sayımı ve "Seni Düşünüyorum" butonu öne çıkar.',
+            title: l10n.text('mode_ld_title'),
+            desc: l10n.text('mode_ld_desc'),
             icon: Icons.flight_takeoff_rounded,
             isSelected: currentMode == RelationshipMode.longDistance,
             theme: theme,
@@ -67,8 +67,8 @@ class ModeSwitchSheet extends StatelessWidget {
           _buildModeTile(
             context: context,
             mode: RelationshipMode.coLiving,
-            title: 'Birlikte Yaşıyoruz Modu',
-            desc: 'Bugünün planı, ortak ev görevleri ve alışveriş listesi öne çıkar.',
+            title: l10n.text('mode_cl_title'),
+            desc: l10n.text('mode_cl_desc'),
             icon: Icons.home_rounded,
             isSelected: currentMode == RelationshipMode.coLiving,
             theme: theme,

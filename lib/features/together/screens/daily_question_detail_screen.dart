@@ -33,8 +33,8 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
 
     _answerController.clear();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cevabınız kaydedildi ve partnerinizin cevabı açıldı! ✨'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).text('dq_answer_saved')),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -49,7 +49,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     final question = togetherProvider.todaysQuestion;
-    final partnerName = appState.currentUser.partnerName ?? 'Can';
+    final partnerName = appState.currentUser.partnerName ?? l10n.text('partner');
 
     final isPremium = appState.currentUser.isPremium;
     final archive = togetherProvider.archive(Limits.questionArchiveDays(premium: isPremium));
@@ -110,7 +110,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
 
             // User Answer Section
             Text(
-              'Senin Cevabın',
+              l10n.text('your_answer'),
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -159,7 +159,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
 
             // Partner's Answer Section
             Text(
-              '$partnerName Cevabı',
+              l10n.textf('dq_partner_answer_title', {'name': partnerName}),
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -175,12 +175,12 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
                     const Icon(Icons.lock_rounded, color: AppColors.textSecondary, size: 32),
                     const SizedBox(height: 10),
                     Text(
-                      'Partnerinizin yanıtı kilitli 🔒',
+                      l10n.text('dq_partner_locked'),
                       style: theme.textTheme.titleMedium?.copyWith(fontSize: 15),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Kendi yanıtınızı yazıp kaydettiğinizde partnerinizin yanıtı burada açılacak.',
+                      l10n.text('daily_question_locked'),
                       style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -202,7 +202,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        question.partnerAnswer ?? 'Partneriniz henüz cevap yazmadı.',
+                        question.partnerAnswer ?? l10n.text('dq_partner_not_answered'),
                         style: const TextStyle(fontSize: 15, height: 1.4),
                       ),
                     ),
@@ -214,7 +214,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
 
             // Past Questions Archive
             Text(
-              'Geçmiş Günlerin Soruları',
+              l10n.text('dq_archive_title'),
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -227,7 +227,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    DateFormat('d MMMM yyyy').format(pq.date),
+                    DateFormat('d MMMM yyyy', appState.currentLanguage).format(pq.date),
                     style: const TextStyle(fontSize: 11),
                   ),
                   children: [
@@ -237,7 +237,7 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Divider(),
-                          Text('Sen: ${pq.myAnswer ?? "-"}', style: const TextStyle(fontSize: 13)),
+                          Text('${l10n.text('you')}: ${pq.myAnswer ?? "-"}', style: const TextStyle(fontSize: 13)),
                           const SizedBox(height: 6),
                           Text('$partnerName: ${pq.partnerAnswer ?? "-"}', style: const TextStyle(fontSize: 13, color: AppColors.primary)),
                         ],

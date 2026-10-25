@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -20,23 +21,24 @@ class ProfileSettingsScreen extends StatelessWidget {
   void _showEditNameDialog(BuildContext context, String currentName) {
     final controller = TextEditingController(text: currentName);
     final appState = Provider.of<AppStateProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context);
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Adını Güncelle'),
+        title: Text(l10n.text('profile_edit_name')),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Adınız veya Takma Adınız',
+          decoration: InputDecoration(
+            labelText: l10n.text('profile_name_label'),
             prefixIcon: Icon(Icons.person_rounded, color: AppColors.primary),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
+            child: Text(l10n.text('cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -46,7 +48,7 @@ class ProfileSettingsScreen extends StatelessWidget {
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Kaydet'),
+            child: Text(l10n.text('save')),
           ),
         ],
       ),
@@ -65,8 +67,8 @@ class ProfileSettingsScreen extends StatelessWidget {
       await appState.updateRelationshipStartDate(picked);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Birliktelik başlangıç tarihiniz güncellendi! ❤️'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).text('profile_start_date_updated')),
             backgroundColor: AppColors.primary,
           ),
         );
@@ -433,9 +435,15 @@ class ProfileSettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           Center(
-            child: Text(
-              'Yanyana v1.0.0 • Sevgiyle Hazırlandı ❤️',
-              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
+            child: FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) => Text(
+                [
+                  if (snapshot.data case final info?) 'Yanyana v${info.version}',
+                  l10n.text('made_with_love'),
+                ].join(' • '),
+                style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
+              ),
             ),
           ),
           const SizedBox(height: 20),

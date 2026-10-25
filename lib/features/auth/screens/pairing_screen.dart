@@ -32,10 +32,10 @@ class _PairingScreenState extends State<PairingScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          children: const [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Davet kodunuz kopyalandı!'),
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context).text('setup_copied_snack')),
           ],
         ),
         backgroundColor: AppColors.accentTeal,
@@ -58,7 +58,7 @@ class _PairingScreenState extends State<PairingScreen> {
     final code = _codeController.text.trim().toUpperCase();
     final error = appState.validatePartnerCode(code);
     if (error != null) {
-      setState(() => _errorMessage = error);
+      setState(() => _errorMessage = AppLocalizations.of(context).text(error));
       return;
     }
 
@@ -150,13 +150,13 @@ class _PairingScreenState extends State<PairingScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Partnerinizle Eşleşin',
+              l10n.text('pairing_title'),
               style: theme.textTheme.titleLarge?.copyWith(fontSize: 24),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'İki telefonu birbirine bağlayarak anılar, takvim ve günün sorusunu ortak alanınızda paylaşın.',
+              l10n.text('pairing_sub'),
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -245,7 +245,7 @@ class _PairingScreenState extends State<PairingScreen> {
                 Expanded(child: Divider(color: isDark ? AppColors.darkDivider : AppColors.divider)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('VEYA', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.bold)),
+                  child: Text(l10n.text('or'), style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
                 Expanded(child: Divider(color: isDark ? AppColors.darkDivider : AppColors.divider)),
               ],
@@ -274,7 +274,7 @@ class _PairingScreenState extends State<PairingScreen> {
                     controller: _codeController,
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
-                      hintText: 'Örn: CFT-K7M2QX',
+                      hintText: l10n.text('setup_code_hint'),
                       prefixIcon: const Icon(Icons.vpn_key_rounded, color: AppColors.primary),
                       errorText: _errorMessage,
                     ),

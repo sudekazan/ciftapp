@@ -11,7 +11,12 @@ import 'who_more_quiz_screen.dart';
 class TogetherScreen extends StatelessWidget {
   const TogetherScreen({super.key});
 
+  /// Platform values are stored as entered; only "Sinema" needs translating.
+  static String _platformLabel(AppLocalizations l10n, String platform) =>
+      platform == 'Sinema' ? l10n.text('platform_cinema') : platform;
+
   void _showAddWatchlistDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final titleController = TextEditingController();
     String type = 'movie';
     String platform = 'Netflix';
@@ -21,13 +26,13 @@ class TogetherScreen extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           return AlertDialog(
-            title: const Text('İzleme Listesine Ekle'),
+            title: Text(l10n.text('add_to_watchlist')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Film / Dizi Adı'),
+                  decoration: InputDecoration(labelText: l10n.text('watch_title_label')),
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -35,10 +40,10 @@ class TogetherScreen extends StatelessWidget {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         initialValue: type,
-                        decoration: const InputDecoration(labelText: 'Tür'),
-                        items: const [
-                          DropdownMenuItem(value: 'movie', child: Text('Film 🎬')),
-                          DropdownMenuItem(value: 'series', child: Text('Dizi 📺')),
+                        decoration: InputDecoration(labelText: l10n.text('watch_type_label')),
+                        items: [
+                          DropdownMenuItem(value: 'movie', child: Text(l10n.text('watch_type_movie'))),
+                          DropdownMenuItem(value: 'series', child: Text(l10n.text('watch_type_series'))),
                         ],
                         onChanged: (val) {
                           if (val != null) setModalState(() => type = val);
@@ -50,12 +55,12 @@ class TogetherScreen extends StatelessWidget {
                       child: DropdownButtonFormField<String>(
                         initialValue: platform,
                         decoration: const InputDecoration(labelText: 'Platform'),
-                        items: const [
+                        items: [
                           DropdownMenuItem(value: 'Netflix', child: Text('Netflix')),
                           DropdownMenuItem(value: 'Prime Video', child: Text('Prime')),
                           DropdownMenuItem(value: 'BluTV', child: Text('BluTV')),
                           DropdownMenuItem(value: 'MUBI', child: Text('MUBI')),
-                          DropdownMenuItem(value: 'Sinema', child: Text('Sinema')),
+                          DropdownMenuItem(value: 'Sinema', child: Text(l10n.text('platform_cinema'))),
                         ],
                         onChanged: (val) {
                           if (val != null) setModalState(() => platform = val);
@@ -67,7 +72,7 @@ class TogetherScreen extends StatelessWidget {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.text('cancel'))),
               ElevatedButton(
                 onPressed: () {
                   if (titleController.text.trim().isNotEmpty) {
@@ -81,7 +86,7 @@ class TogetherScreen extends StatelessWidget {
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Ekle'),
+                child: Text(l10n.text('add')),
               ),
             ],
           );
@@ -165,7 +170,7 @@ class TogetherScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            question.isRevealed ? 'Cevaplandı ✨' : 'Bekleniyor',
+                            l10n.text(question.isRevealed ? 'dq_status_revealed' : 'dq_status_waiting'),
                             style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -184,9 +189,9 @@ class TogetherScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
-                      children: const [
+                      children: [
                         Text(
-                          'Detaylar ve Cevaplar',
+                          l10n.text('dq_details'),
                           style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         SizedBox(width: 4),
@@ -242,7 +247,7 @@ class TogetherScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '3 soru • Uyum skoru',
+                            l10n.textf('quiz_card_sub', {'n': togetherProvider.quizPacks.length}),
                             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
                           ),
                         ],
@@ -285,7 +290,7 @@ class TogetherScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Eğlenceli seçimler',
+                            l10n.text('who_more_card_sub'),
                             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
                           ),
                         ],
@@ -308,7 +313,7 @@ class TogetherScreen extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
-                  tooltip: 'Film / Dizi Ekle',
+                  tooltip: l10n.text('add_to_watchlist'),
                   onPressed: () => _showAddWatchlistDialog(context),
                 ),
               ],
@@ -336,7 +341,7 @@ class TogetherScreen extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    '${item.platform} • Ekleyen: ${item.addedBy}',
+                    '${_platformLabel(l10n, item.platform)} • ${l10n.textf('added_by', {'name': item.addedBy})}',
                     style: const TextStyle(fontSize: 12),
                   ),
                   trailing: IconButton(

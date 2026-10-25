@@ -59,10 +59,10 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          children: const [
-            Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Partnerine sevgi dokunuşun iletildi! ❤️'),
+          children: [
+            const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(AppLocalizations.of(context).text('pulse_sent'))),
           ],
         ),
         backgroundColor: AppColors.primary,
@@ -92,13 +92,13 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
             ),
             const SizedBox(height: 16),
             Text(
-              '$partnerName Seni Düşündü! ❤️',
+              AppLocalizations.of(context).textf('pulse_received_title', {'name': partnerName}),
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Mesafeler kalpleri ayıramaz. $partnerName az önce ekranındaki kalbe dokunarak sevgisini sana hissettirdi.',
+              AppLocalizations.of(context).textf('pulse_received_body', {'name': partnerName}),
               style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
@@ -109,7 +109,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                 _onTapHeart();
               },
               icon: const Icon(Icons.favorite_rounded, size: 18),
-              label: const Text('Ben de Seni Düşünüyorum 💖'),
+              label: Text(AppLocalizations.of(context).text('pulse_reply')),
             ),
           ],
         ),
@@ -236,8 +236,8 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                   const SizedBox(width: 6),
                   Text(
                     !appState.lastPulseFromPartner
-                        ? 'Sevgini gönderdin (Az önce)'
-                        : '${user.partnerName ?? "Partnerin"} seni düşündü! ❤️',
+                        ? l10n.text('pulse_status_sent')
+                        : l10n.textf('pulse_status_received', {'name': user.partnerName ?? l10n.text('partner')}),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 12,
                       color: AppColors.primary,

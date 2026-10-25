@@ -109,7 +109,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
       if (error != null) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(_t.text(error)), backgroundColor: Colors.redAccent),
         );
         return;
       }

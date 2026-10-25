@@ -29,7 +29,7 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
     final totalVoted = list.where((q) => q.isBothVoted).length;
 
     final myName = appState.currentUser.name;
-    final partnerName = appState.currentUser.partnerName ?? 'Can';
+    final partnerName = appState.currentUser.partnerName ?? l10n.text('partner');
 
     final percent = totalVoted > 0 ? ((agreedCount / totalVoted) * 100).round() : 0;
 
@@ -72,7 +72,7 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Ortak Görüş: %$percent',
+                          l10n.textf('who_more_score', {'p': percent}),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -81,7 +81,7 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$totalVoted sorudan $agreedCount tanesinde aynı cevabı verdiniz! 🎉',
+                          l10n.textf('who_more_score_sub', {'total': totalVoted, 'n': agreedCount}),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12.5,
@@ -122,7 +122,7 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'SORU ${index + 1}',
+                            l10n.textf('question_n_upper', {'n': index + 1}),
                             style: const TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -149,7 +149,7 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    isAgreed ? 'Aynı Fikirdeyiz! 🎉' : 'Farklı Düşünce 😄',
+                                    l10n.text(isAgreed ? 'who_more_agreed' : 'who_more_disagreed'),
                                     style: TextStyle(
                                       color: isAgreed ? AppColors.accentTeal : AppColors.accentGold,
                                       fontSize: 10.5,
@@ -181,7 +181,7 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
                               context: context,
                               theme: theme,
                               isDark: isDark,
-                              label: '$myName (Ben)',
+                              label: l10n.textf('name_me', {'name': myName}),
                               voteKey: 'me',
                               isSelected: q.myVote == 'me',
                               isPartnerChoice: q.partnerVote == 'me',
@@ -217,7 +217,10 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
                               const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 14),
                               const SizedBox(width: 6),
                               Text(
-                                '$partnerName tercihi: ${q.partnerVote == "me" ? myName : partnerName}',
+                                l10n.textf('who_more_partner_choice', {
+                                  'name': partnerName,
+                                  'choice': q.partnerVote == 'me' ? myName : partnerName,
+                                }),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,

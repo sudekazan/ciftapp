@@ -186,16 +186,13 @@ class AppStateProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   static final RegExp _inviteCodePattern = RegExp(r'^CFT-[A-HJ-NP-Z2-9]{6}$');
 
-  /// Returns an error message (TR) or `null` if [raw] is a valid partner code.
+  /// Returns a localization key describing the problem, or `null` if [raw]
+  /// is a valid partner code.
   String? validatePartnerCode(String raw) {
     final code = raw.trim().toUpperCase();
-    if (code.isEmpty) return 'Lütfen partnerinizin kodunu girin.';
-    if (!_inviteCodePattern.hasMatch(code)) {
-      return 'Geçersiz kod. Kod CFT-XXXXXX biçiminde olmalı.';
-    }
-    if (code == _currentUser.inviteCode) {
-      return 'Kendi davet kodunu giremezsin. Partnerinin kodunu gir.';
-    }
+    if (code.isEmpty) return 'setup_enter_code_snack';
+    if (!_inviteCodePattern.hasMatch(code)) return 'code_err_format';
+    if (code == _currentUser.inviteCode) return 'pair_err_ownCode';
     return null;
   }
 

@@ -71,7 +71,7 @@ class DailyQuestionPreviewCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      question.isRevealed ? 'Cevaplar Açık' : 'Kilitli',
+                      l10n.text(question.isRevealed ? 'dq_preview_open' : 'dq_preview_locked'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -105,7 +105,7 @@ class DailyQuestionPreviewCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'İkiniz de cevapladınız! Cevapları okumak için dokunun.',
+                      l10n.text('dq_preview_both_answered'),
                       style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                     ),
                   ),

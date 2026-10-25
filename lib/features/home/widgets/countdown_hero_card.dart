@@ -16,6 +16,7 @@ class CountdownHeroCard extends StatefulWidget {
 }
 
 class _CountdownHeroCardState extends State<CountdownHeroCard> {
+  AppLocalizations get _t => AppLocalizations.of(context);
   late Timer _timer;
 
   @override
@@ -45,10 +46,10 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Row(
-              children: const [
+              children: [
                 Icon(Icons.flight_takeoff_rounded, color: AppColors.primary, size: 22),
                 SizedBox(width: 8),
-                Text('Buluşmayı Güncelle', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(_t.text('reunion_edit_title'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             content: Column(
@@ -57,20 +58,20 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
               children: [
                 TextField(
                   controller: locController,
-                  decoration: const InputDecoration(
-                    labelText: 'Buluşma Yeri / Planı',
+                  decoration: InputDecoration(
+                    labelText: _t.text('reunion_place_label'),
                     prefixIcon: Icon(Icons.location_on_outlined, color: AppColors.primary),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('Buluşma Tarihi & Saati:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(_t.text('reunion_datetime_label'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
                 ListTile(
                   tileColor: isDark ? AppColors.darkSurface : AppColors.primarySoft,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   leading: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
                   title: Text(
-                    DateFormat('d MMMM yyyy, HH:mm').format(selectedDate),
+                    DateFormat('d MMMM yyyy, HH:mm', Localizations.localeOf(context).languageCode).format(selectedDate),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   trailing: const Icon(Icons.edit_calendar_rounded, size: 18, color: AppColors.primary),
@@ -103,16 +104,16 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
               ElevatedButton(
                 onPressed: () async {
                   await appState.updateReunion(
                     date: selectedDate,
-                    location: locController.text.trim().isEmpty ? 'Buluşma Planı ✈️' : locController.text.trim(),
+                    location: locController.text.trim().isEmpty ? _t.text('reunion_default_place') : locController.text.trim(),
                   );
                   if (ctx.mounted) Navigator.pop(ctx);
                 },
-                child: const Text('Kaydet'),
+                child: Text(_t.text('save')),
               ),
             ],
           );
@@ -161,7 +162,7 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Henüz bir buluşma tarihi belirlemediniz.',
+                    _t.text('reunion_none'),
                     style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                   ),
                 ],
@@ -169,7 +170,7 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
             ),
             TextButton(
               onPressed: () => _showEditReunionDialog(context, user),
-              child: const Text('Tarih Belirle', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(_t.text('reunion_set_date'), style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -226,7 +227,7 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  user.reunionLocation ?? 'Buluşma Planı',
+                                  user.reunionLocation ?? _t.text('reunion_default_place'),
                                   style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -246,7 +247,7 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
               ),
               IconButton(
                 icon: const Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.primary),
-                tooltip: 'Buluşma Tarihini Değiştir',
+                tooltip: _t.text('reunion_change_date'),
                 onPressed: () => _showEditReunionDialog(context, user),
               ),
             ],
@@ -257,13 +258,13 @@ class _CountdownHeroCardState extends State<CountdownHeroCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildUnitBox(theme, isDark, '$days', 'GÜN'),
+              _buildUnitBox(theme, isDark, '$days', _t.text('unit_days')),
               _buildColon(theme),
-              _buildUnitBox(theme, isDark, hours.toString().padLeft(2, '0'), 'SAAT'),
+              _buildUnitBox(theme, isDark, hours.toString().padLeft(2, '0'), _t.text('unit_hours')),
               _buildColon(theme),
-              _buildUnitBox(theme, isDark, minutes.toString().padLeft(2, '0'), 'DAKİKA'),
+              _buildUnitBox(theme, isDark, minutes.toString().padLeft(2, '0'), _t.text('unit_minutes')),
               _buildColon(theme),
-              _buildUnitBox(theme, isDark, seconds.toString().padLeft(2, '0'), 'SANİYE'),
+              _buildUnitBox(theme, isDark, seconds.toString().padLeft(2, '0'), _t.text('unit_seconds')),
             ],
           ),
         ],

@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
                 size: 20,
               ),
             ),
-            tooltip: 'Mod Değiştir',
+            tooltip: l10n.text('mode_switch_title'),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -85,7 +85,7 @@ class HomeScreen extends StatelessWidget {
               ),
               child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 20),
             ),
-            tooltip: 'Profil ve Ayarlar',
+            tooltip: l10n.text('profile_title'),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProfileSettingsScreen()),
