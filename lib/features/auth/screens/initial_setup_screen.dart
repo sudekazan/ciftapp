@@ -141,10 +141,11 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   }
 
   void _shareInviteCode(String code) {
-    Share.share(
-      'Yanyana\'da sana özel alanımızı oluşturdum! Uygulamayı açtığında davet kodumu gir: $code ❤️',
-      subject: 'Yanyana Davet Kodu',
-    );
+    final l10n = AppLocalizations.of(context);
+    SharePlus.instance.share(ShareParams(
+      text: l10n.textf('invite_share_text', {'code': code, 'link': AppLinks.inviteUrl(code)}),
+      subject: l10n.text('invite_share_subject'),
+    ));
   }
 
   @override

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yanyana Daveti</title>
+<meta name="description" content="Partnerin seni Yanyana'daki ortak alanına davet etti.">
+<link rel="stylesheet" href="style.css">
+<style>
+.code{font-size:2rem;font-weight:800;letter-spacing:.12em;text-align:center;padding:18px;border:2px dashed #e8507a;border-radius:18px;margin:18px 0}
+.actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.btn{display:inline-block;padding:12px 20px;border-radius:14px;background:linear-gradient(90deg,#e8507a,#8b5cf6);color:#fff;text-decoration:none;font-weight:700;border:0;font-size:1rem;cursor:pointer}
+.btn.secondary{background:#2d2a3e}
+ol li{margin:6px 0}
+</style>
+</head>
+<body>
+<main>
+<h1 id="title">Yanyana'ya davet edildin 💌</h1>
+<p id="lead">Partnerin, ikinize özel ortak alanı oluşturdu. Uygulamayı indir ve aşağıdaki kodu girerek eşleş.</p>
+
+<div class="code" id="code">CFT-······</div>
+<div class="actions">
+  <button class="btn" id="copy" type="button">Kodu Kopyala</button>
+</div>
+
+<h2 id="stepsTitle">Nasıl eşleşirim?</h2>
+<ol id="steps">
+  <li>Yanyana'yı indir.</li>
+  <li>Kurulumda "Partnerimin Davet Kodu Var" seçeneğini seç.</li>
+  <li>Yukarıdaki kodu gir, ortak alanınız hazır!</li>
+</ol>
+
+<div class="actions">
+  <a class="btn secondary" id="ios" href="#" hidden>App Store</a>
+  <a class="btn secondary" id="android" href="https://play.google.com/store/apps/details?id=com.sudekazan.yanyana">Google Play</a>
+</div>
+</main>
+<script>
+// App Store'da yayınlandıktan sonra uygulama kimliğini buraya yazın (ör. "id1234567890").
+var APP_STORE_ID = "";
+
+var params = new URLSearchParams(location.search);
+var code = (params.get("kod") || params.get("code") || "").toUpperCase();
+var valid = /^CFT-[A-HJ-NP-Z2-9]{6}$/.test(code);
+if (valid) document.getElementById("code").textContent = code;
+
+if (APP_STORE_ID) {
+  var ios = document.getElementById("ios");
+  ios.href = "https://apps.apple.com/app/" + APP_STORE_ID;
+  ios.hidden = false;
+}
+
+var en = !(navigator.language || "tr").toLowerCase().startsWith("tr");
+if (en) {
+  document.documentElement.lang = "en";
+  document.getElementById("title").textContent = "You're invited to Yanyana 💌";
+  document.getElementById("lead").textContent = "Your partner created a private space for the two of you. Download the app and enter the code below to pair.";
+  document.getElementById("copy").textContent = "Copy Code";
+  document.getElementById("stepsTitle").textContent = "How do I pair?";
+  var steps = ["Download Yanyana.", "During setup choose \"My partner has an invite code\".", "Enter the code above and your shared space is ready!"];
+  document.querySelectorAll("#steps li").forEach(function (li, i) { li.textContent = steps[i]; });
+}
+
+document.getElementById("copy").addEventListener("click", function () {
+  if (!valid) return;
+  navigator.clipboard.writeText(code).then(function () {
+    document.getElementById("copy").textContent = en ? "Copied!" : "Kopyalandı!";
+  });
+});
+</script>
+</body>
+</html>

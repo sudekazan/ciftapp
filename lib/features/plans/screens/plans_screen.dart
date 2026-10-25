@@ -126,7 +126,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: assignedTo,
+                  initialValue: assignedTo,
                   decoration: const InputDecoration(labelText: 'Kime Atansın?'),
                   items: const [
                     DropdownMenuItem(value: 'both', child: Text('İkimize Ortak')),
@@ -179,7 +179,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: category,
+                  initialValue: category,
                   decoration: const InputDecoration(labelText: 'Kategori'),
                   items: const [
                     DropdownMenuItem(value: 'market', child: Text('Market / Yiyecek')),

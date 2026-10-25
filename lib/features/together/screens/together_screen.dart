@@ -34,7 +34,7 @@ class TogetherScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: type,
+                        initialValue: type,
                         decoration: const InputDecoration(labelText: 'Tür'),
                         items: const [
                           DropdownMenuItem(value: 'movie', child: Text('Film 🎬')),
@@ -48,7 +48,7 @@ class TogetherScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: platform,
+                        initialValue: platform,
                         decoration: const InputDecoration(labelText: 'Platform'),
                         items: const [
                           DropdownMenuItem(value: 'Netflix', child: Text('Netflix')),

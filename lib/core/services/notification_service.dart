@@ -29,6 +29,9 @@ class NotificationService {
 
   Future<void> _refreshToken() async {
     try {
+      // Registration tokens are what the Admin SDK (Cloud Functions) sends to;
+      // the newer FID-based register() API is not supported there yet.
+      // ignore: deprecated_member_use
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null && token != _fcmToken) {
         _fcmToken = token;
@@ -86,6 +89,7 @@ class NotificationService {
       await _refreshToken();
 
       // Listen for token refreshes
+      // ignore: deprecated_member_use
       messaging.onTokenRefresh.listen((newToken) {
         _fcmToken = newToken;
         debugPrint('NotificationService: FCM Token refreshed: $newToken');
