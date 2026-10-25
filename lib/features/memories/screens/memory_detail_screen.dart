@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/localization/content_labels.dart';
 import '../../../core/models/memory_item.dart';
 import '../../../core/providers/memories_provider.dart';
 
@@ -18,6 +20,8 @@ class MemoryDetailScreen extends StatefulWidget {
 class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
   late PageController _pageController;
   int _currentPhotoIndex = 0;
+
+  AppLocalizations get _t => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -35,10 +39,10 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Anıyı Sil'),
-        content: const Text('Bu anıyı defterinizden silmek istediğinize emin misiniz?'),
+        title: Text(_t.text('memory_delete_title')),
+        content: Text(_t.text('memory_delete_confirm')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
@@ -46,7 +50,7 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
               Navigator.pop(ctx); // Close dialog
               Navigator.pop(context); // Close detail screen
             },
-            child: const Text('Sil'),
+            child: Text(_t.text('delete')),
           ),
         ],
       ),
@@ -77,7 +81,7 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                   ),
                   child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
                 ),
-                tooltip: 'Anıyı Sil',
+                tooltip: _t.text('memory_delete_title'),
                 onPressed: _confirmDelete,
               ),
               const SizedBox(width: 8),
@@ -184,7 +188,7 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
-                            memory.mood!,
+                            ContentLabels.mood(_t, memory.mood!),
                             style: const TextStyle(
                               color: AppColors.primaryDark,
                               fontWeight: FontWeight.bold,
@@ -226,7 +230,7 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                       const Icon(Icons.calendar_month_rounded, size: 16, color: AppColors.textSecondary),
                       const SizedBox(width: 6),
                       Text(
-                        DateFormat('d MMMM yyyy, EEEE').format(memory.date),
+                        DateFormat('d MMMM yyyy, EEEE', Localizations.localeOf(context).languageCode).format(memory.date),
                         style: TextStyle(
                           color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                           fontSize: 13,
@@ -259,11 +263,11 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: const [
+                          children: [
                             Icon(Icons.format_quote_rounded, color: AppColors.primary, size: 24),
                             SizedBox(width: 6),
                             Text(
-                              'Anının Notu & Hikayesi',
+                              _t.text('memory_story_label'),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -288,7 +292,7 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                   // Gallery Thumbnails List (Tüm Fotoğraflar)
                   if (photos.length > 1) ...[
                     Text(
-                      'Tüm Fotoğraflar (${photos.length})',
+                      _t.textf('memory_all_photos', {'n': photos.length}),
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
@@ -337,7 +341,7 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                   // Tags
                   if (memory.tags.isNotEmpty) ...[
                     Text(
-                      'Etiketler',
+                      _t.text('memory_tags_label'),
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),

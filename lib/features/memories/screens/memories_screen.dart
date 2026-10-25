@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/localization/content_labels.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/memories_provider.dart';
 import '../../../core/premium/limits.dart';
@@ -22,6 +23,9 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   bool _onlyFavorites = false;
+
+  AppLocalizations get _t => AppLocalizations.of(context);
+  String get _lang => Localizations.localeOf(context).languageCode;
 
   @override
   void initState() {
@@ -59,20 +63,20 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
         builder: (context, setModalState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return AlertDialog(
-            title: const Text('Yeni Sayaç Ekle'),
+            title: Text(_t.text('add_countdown')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: titleTrController,
-                  decoration: const InputDecoration(labelText: 'Özel Gün Başlığı (Örn: Doğum Günü)'),
+                  decoration: InputDecoration(labelText: _t.text('countdown_title_label')),
                 ),
                 const SizedBox(height: 14),
                 ListTile(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   tileColor: isDark ? AppColors.darkSurface : AppColors.background,
                   leading: const Icon(Icons.cake_rounded, color: AppColors.primary),
-                  title: Text(DateFormat('d MMMM yyyy').format(targetDate)),
+                  title: Text(DateFormat('d MMMM yyyy', _lang).format(targetDate)),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -88,7 +92,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
               ElevatedButton(
                 onPressed: () {
                   if (titleTrController.text.trim().isNotEmpty) {
@@ -100,7 +104,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Ekle'),
+                child: Text(_t.text('add')),
               ),
             ],
           );
@@ -149,7 +153,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: Text(_tabController.index == 0 ? 'Anı Ekle' : 'Sayaç Ekle', style: const TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(_t.text(_tabController.index == 0 ? 'add_memory_short' : 'add_countdown_short'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -240,7 +244,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Anılarda veya etiketlerde ara...',
+                  hintText: _t.text('memories_search_hint'),
                   prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primary),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -263,7 +267,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                 size: 16,
                 color: _onlyFavorites ? Colors.redAccent : AppColors.primary,
               ),
-              label: Text(_onlyFavorites ? 'Favoriler' : 'Tümü'),
+              label: Text(_t.text(_onlyFavorites ? 'favorites' : 'cat_all')),
               selected: _onlyFavorites,
               onSelected: (val) => setState(() => _onlyFavorites = val),
             ),
@@ -280,7 +284,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                 Icon(Icons.search_off_rounded, size: 48, color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
                 const SizedBox(height: 12),
                 Text(
-                  _onlyFavorites ? 'Henüz favori anı eklemediniz ❤️' : 'Aramanızla eşleşen anı bulunamadı ✨',
+                  _t.text(_onlyFavorites ? 'memories_no_favorites' : 'memories_no_results'),
                   style: theme.textTheme.bodyMedium,
                 ),
               ],
@@ -288,7 +292,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
           )
         else
           ...filteredMemories.map((memory) {
-            final dateStr = DateFormat('d MMMM yyyy').format(memory.date);
+            final dateStr = DateFormat('d MMMM yyyy', _lang).format(memory.date);
             final firstImage = memory.primaryImageUrl;
             final totalPhotos = memory.imageUrls.length;
 
@@ -358,7 +362,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                                     const Icon(Icons.photo_library_rounded, color: Colors.white, size: 14),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '$totalPhotos Fotoğraf',
+                                      _t.textf('photo_count', {'n': totalPhotos}),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 11,
@@ -381,7 +385,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  memory.mood!,
+                                  ContentLabels.mood(_t, memory.mood!),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
@@ -445,8 +449,8 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                               )).toList(),
                             ),
                             Row(
-                              children: const [
-                                Text('İncele', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                              children: [
+                                Text(_t.text('view'), style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                                 SizedBox(width: 2),
                                 Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 18),
                               ],
@@ -493,7 +497,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
               const Icon(Icons.favorite_rounded, color: Colors.white, size: 36),
               const SizedBox(height: 10),
               Text(
-                '$daysTogether Gündür',
+                _t.textf('days_together_count', {'n': daysTogether}),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 32,
@@ -501,8 +505,8 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Aynı sevgiyle, her geçen gün daha güçlü ❤️',
+              Text(
+                _t.text('days_together_sub'),
                 style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
               ),
             ],
@@ -548,7 +552,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          DateFormat('d MMMM yyyy').format(item.targetDate),
+                          DateFormat('d MMMM yyyy', _lang).format(item.targetDate),
                           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
                       ],
@@ -563,7 +567,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> with SingleTickerProvid
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      isPast ? '$days gün geçti' : '$days gün kaldı',
+                      _t.textf(isPast ? 'days_passed' : 'days_left', {'n': days}),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

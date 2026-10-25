@@ -41,6 +41,23 @@ void main() {
     expect(partner.tasks, isEmpty);
   });
 
+  test('task assignment is shown from each partner\'s point of view', () async {
+    final mine = PlansProvider(store: FakeCoupleDataStore(cloud, uid: 'a'));
+    final partner = PlansProvider(store: FakeCoupleDataStore(cloud, uid: 'b'));
+    mine.bindCouple('cpl_1', 0);
+    partner.bindCouple('cpl_1', 0);
+    await settle();
+
+    mine.addTask('Faturayı öde', assignedTo: 'me');
+    mine.addTask('Market', assignedTo: 'both');
+    await settle();
+
+    final bill = partner.tasks.firstWhere((t) => t.title == 'Faturayı öde');
+    expect(mine.assigneeOf(mine.tasks.first), 'me');
+    expect(partner.assigneeOf(bill), 'partner');
+    expect(partner.assigneeOf(partner.tasks.firstWhere((t) => t.title == 'Market')), 'both');
+  });
+
   test('memories and love notes are shared, newest first', () async {
     final mine = MemoriesProvider(store: FakeCoupleDataStore(cloud, uid: 'a'));
     final partner = MemoriesProvider(store: FakeCoupleDataStore(cloud, uid: 'b'));

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/plans_provider.dart';
 
 class ColivingSummaryCard extends StatelessWidget {
@@ -15,7 +16,8 @@ class ColivingSummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final tasks = plansProvider.tasks.take(3).toList();
+    final tasks = plansProvider.tasks.where((t) => !t.isCompleted).take(3).toList();
+    final partnerName = Provider.of<AppStateProvider>(context).currentUser.partnerName ?? l10n.text('partner');
     final shopping = plansProvider.shoppingList.where((s) => !s.isBought).take(3).toList();
 
     return Column(
@@ -59,7 +61,7 @@ class ColivingSummaryCard extends StatelessWidget {
                   if (onOpenPlans != null)
                     TextButton(
                       onPressed: onOpenPlans,
-                      child: const Text('Tümünü Gör', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(l10n.text('see_all'), style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
                 ],
               ),
@@ -112,7 +114,11 @@ class ColivingSummaryCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                task.assignedTo == 'me' ? 'Sen' : (task.assignedTo == 'partner' ? 'Can' : 'Ortak'),
+                                switch (plansProvider.assigneeOf(task)) {
+                                  'me' => l10n.text('you'),
+                                  'partner' => partnerName,
+                                  _ => l10n.text('shared'),
+                                },
                                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ),

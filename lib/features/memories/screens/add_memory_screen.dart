@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/localization/content_labels.dart';
 import '../../../core/premium/limits.dart';
 import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/memories_provider.dart';
@@ -33,23 +34,11 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
   static const int _photoQuality = 80;
   bool _isSaving = false;
 
-  final List<String> _moodOptions = [
-    'Romantik ❤️',
-    'Eğlenceli 🎉',
-    'Huzurlu 🕊️',
-    'Özel Kutlama 🥂',
-    'Macera 🌲',
-    'Duygusal 🥺',
-  ];
+  final List<String> _moodOptions = ContentLabels.moods;
 
-  final List<String> _quickLocations = [
-    'Kadıköy',
-    'Ortaköy',
-    'Evimiz 🏡',
-    'Sahil 🌊',
-    'Havalimanı ✈️',
-    'Kapadokya 🎈',
-  ];
+  static const _quickLocationKeys = ['loc_home', 'loc_cafe', 'loc_beach', 'loc_park', 'loc_restaurant', 'loc_airport'];
+
+  AppLocalizations get _t => AppLocalizations.of(context);
 
   @override
   void dispose() {
@@ -103,8 +92,8 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Fotoğraflara erişilemedi. Lütfen izinleri kontrol edin.'),
+        SnackBar(
+          content: Text(_t.text('photos_access_denied')),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -114,7 +103,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
   void _showPhotoLimit(int maxPhotos) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context).textf('photo_limit_reached', {'n': maxPhotos})),
+        content: Text(_t.textf('photo_limit_reached', {'n': maxPhotos})),
         backgroundColor: AppColors.secondary,
       ),
     );
@@ -137,8 +126,8 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen anınız için bir başlık girin.'),
+        SnackBar(
+          content: Text(_t.text('memory_title_required')),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -176,10 +165,10 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
       messenger.showSnackBar(
         SnackBar(
           content: Row(
-            children: const [
-              Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text('Yeni anınız başarıyla deftere kaydedildi! ❤️'),
+            children: [
+              const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(_t.text('memory_saved'))),
             ],
           ),
           backgroundColor: AppColors.primary,
@@ -192,7 +181,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
         setState(() => _isSaving = false);
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Kayıt sırasında bir hata oluştu: $e'),
+            content: Text(_t.text('memory_save_failed')),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -207,7 +196,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Yeni Anı Ekle', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(_t.text('add_memory'), style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
@@ -220,7 +209,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.check_rounded, size: 18),
-              label: Text(_isSaving ? 'Yükleniyor...' : 'Kaydet'),
+              label: Text(_t.text(_isSaving ? 'uploading' : 'save')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 minimumSize: const Size(90, 38),
@@ -240,11 +229,11 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Fotoğraflar & Anı Kareleri',
+                  _t.text('memory_photos_title'),
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 Text(
-                  '${_selectedImageUrls.length} fotoğraf seçildi',
+                  _t.textf('memory_photos_selected', {'n': _selectedImageUrls.length}),
                   style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -272,11 +261,11 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
+                        children: [
                           Icon(Icons.add_photo_alternate_rounded, color: AppColors.primary, size: 36),
                           SizedBox(height: 6),
                           Text(
-                            'Fotoğraf Ekle',
+                            _t.text('memory_photo'),
                             style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 12,
@@ -353,12 +342,12 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
             const SizedBox(height: 24),
 
             // Section 2: Title
-            Text('Anının Başlığı', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(_t.text('memory_title_label'), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                hintText: 'Örn: Boğaz Kenarında Akşam Yemeği',
+              decoration: InputDecoration(
+                hintText: _t.text('memory_title_hint'),
                 prefixIcon: Icon(Icons.title_rounded, color: AppColors.primary),
               ),
             ),
@@ -371,7 +360,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Tarih', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(_t.text('date_label'), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: () async {
@@ -399,7 +388,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  DateFormat('d MMMM yyyy').format(_selectedDate),
+                                  DateFormat('d MMMM yyyy', Localizations.localeOf(context).languageCode).format(_selectedDate),
                                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                                 ),
                               ),
@@ -415,12 +404,12 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Konum / Yer', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(_t.text('memory_location_label'), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _locationController,
-                        decoration: const InputDecoration(
-                          hintText: 'İstanbul / Londra',
+                        decoration: InputDecoration(
+                          hintText: _t.text('memory_location_hint'),
                           prefixIcon: Icon(Icons.location_on_rounded, color: AppColors.primary),
                         ),
                       ),
@@ -434,7 +423,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
             // Quick location suggestions
             Wrap(
               spacing: 6,
-              children: _quickLocations.map((loc) => ActionChip(
+              children: _quickLocationKeys.map((key) => _t.text(key)).map((loc) => ActionChip(
                 label: Text(loc, style: const TextStyle(fontSize: 11)),
                 onPressed: () {
                   setState(() => _locationController.text = loc);
@@ -445,7 +434,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
             const SizedBox(height: 20),
 
             // Section 4: Mood of the Memory
-            Text('Duygu & Anın Havası', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(_t.text('memory_mood_label'), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -453,7 +442,7 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
               children: _moodOptions.map((mood) {
                 final isSelected = _selectedMood == mood;
                 return ChoiceChip(
-                  label: Text(mood),
+                  label: Text(ContentLabels.mood(_t, mood)),
                   selected: isSelected,
                   selectedColor: AppColors.primarySoft,
                   labelStyle: TextStyle(
@@ -470,27 +459,27 @@ class _AddMemoryScreenState extends State<AddMemoryScreen> {
             const SizedBox(height: 20),
 
             // Section 5: Note / Story
-            Text('Bu Anının Hikayesi', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(_t.text('memory_story_label'), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _noteController,
               maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Birlikte neler hissettiniz? Bu güne dair unutmamanız gereken küçük ayrıntılar...',
+              decoration: InputDecoration(
+                hintText: _t.text('memory_note'),
               ),
             ),
             const SizedBox(height: 20),
 
             // Section 6: Tags
-            Text('Etiketler', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(_t.text('memory_tags_label'), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _tagController,
-                    decoration: const InputDecoration(
-                      hintText: 'Örn: Tatil, İlkGün, Sürpriz',
+                    decoration: InputDecoration(
+                      hintText: _t.text('memory_tags_hint'),
                       prefixIcon: Icon(Icons.tag_rounded, color: AppColors.secondary),
                     ),
                     onSubmitted: (_) => _addTag(),

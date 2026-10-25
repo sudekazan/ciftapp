@@ -55,6 +55,16 @@ class PlansProvider extends ChangeNotifier with CoupleBoundProvider {
   bool get isLoaded => _isLoaded;
 
   int get pendingTasksCount => tasks.where((t) => !t.isCompleted).length;
+
+  /// Who [task] is assigned to from the current user's point of view
+  /// ('me', 'partner' or 'both'). It is stored relative to its author, so it is
+  /// flipped when the partner created the task.
+  String assigneeOf(TaskItem task) {
+    final assigned = task.assignedTo ?? 'both';
+    final author = _tasks.authorOf(task.id);
+    if (assigned == 'both' || author == null || author == dataStore.currentUid) return assigned;
+    return assigned == 'me' ? 'partner' : 'me';
+  }
   int get pendingShoppingCount => shoppingList.where((s) => !s.isBought).length;
 
   Future<void> _load() async {

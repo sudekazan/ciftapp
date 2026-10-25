@@ -16,6 +16,9 @@ class PlansScreen extends StatefulWidget {
 class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  AppLocalizations get _t => AppLocalizations.of(context);
+  String get _lang => Localizations.localeOf(context).languageCode;
+
   @override
   void initState() {
     super.initState();
@@ -50,26 +53,26 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
         builder: (context, setModalState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return AlertDialog(
-            title: const Text('Yeni Etkinlik Ekle'),
+            title: Text(_t.text('add_event')),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Etkinlik Başlığı'),
+                    decoration: InputDecoration(labelText: _t.text('event_title_label')),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: descController,
-                    decoration: const InputDecoration(labelText: 'Açıklama / Lokasyon'),
+                    decoration: InputDecoration(labelText: _t.text('event_desc_label')),
                   ),
                   const SizedBox(height: 16),
                   ListTile(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     tileColor: isDark ? AppColors.darkSurface : AppColors.background,
                     leading: const Icon(Icons.calendar_today_rounded, color: AppColors.primary),
-                    title: Text(DateFormat('d MMMM yyyy').format(selectedDate)),
+                    title: Text(DateFormat('d MMMM yyyy', _lang).format(selectedDate)),
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
@@ -86,7 +89,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
               ElevatedButton(
                 onPressed: () {
                   if (titleController.text.trim().isNotEmpty) {
@@ -98,7 +101,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Kaydet'),
+                child: Text(_t.text('save')),
               ),
             ],
           );
@@ -116,22 +119,22 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           return AlertDialog(
-            title: const Text('Yeni Görev Ekle'),
+            title: Text(_t.text('add_task')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Görev Nedir?'),
+                  decoration: InputDecoration(labelText: _t.text('task_title_label')),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: assignedTo,
-                  decoration: const InputDecoration(labelText: 'Kime Atansın?'),
-                  items: const [
-                    DropdownMenuItem(value: 'both', child: Text('İkimize Ortak')),
-                    DropdownMenuItem(value: 'me', child: Text('Bana')),
-                    DropdownMenuItem(value: 'partner', child: Text('Partnerime')),
+                  decoration: InputDecoration(labelText: _t.text('task_assign_label')),
+                  items: [
+                    DropdownMenuItem(value: 'both', child: Text(_t.text('task_assign_both'))),
+                    DropdownMenuItem(value: 'me', child: Text(_t.text('task_assign_me'))),
+                    DropdownMenuItem(value: 'partner', child: Text(_t.text('task_assign_partner'))),
                   ],
                   onChanged: (val) {
                     if (val != null) setModalState(() => assignedTo = val);
@@ -140,7 +143,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
               ElevatedButton(
                 onPressed: () {
                   if (titleController.text.trim().isNotEmpty) {
@@ -151,7 +154,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Ekle'),
+                child: Text(_t.text('add')),
               ),
             ],
           );
@@ -169,22 +172,22 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           return AlertDialog(
-            title: const Text('Alışveriş Listesine Ekle'),
+            title: Text(_t.text('add_shopping_item')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Ürün Adı'),
+                  decoration: InputDecoration(labelText: _t.text('shopping_name_label')),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: category,
-                  decoration: const InputDecoration(labelText: 'Kategori'),
-                  items: const [
-                    DropdownMenuItem(value: 'market', child: Text('Market / Yiyecek')),
-                    DropdownMenuItem(value: 'home', child: Text('Ev / Yaşam')),
-                    DropdownMenuItem(value: 'other', child: Text('Diğer')),
+                  decoration: InputDecoration(labelText: _t.text('shopping_category_label')),
+                  items: [
+                    DropdownMenuItem(value: 'market', child: Text(_t.text('shopping_cat_market'))),
+                    DropdownMenuItem(value: 'home', child: Text(_t.text('shopping_cat_home'))),
+                    DropdownMenuItem(value: 'other', child: Text(_t.text('shopping_cat_other'))),
                   ],
                   onChanged: (val) {
                     if (val != null) setModalState(() => category = val);
@@ -193,7 +196,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_t.text('cancel'))),
               ElevatedButton(
                 onPressed: () {
                   if (nameController.text.trim().isNotEmpty) {
@@ -206,7 +209,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
                     Navigator.pop(ctx);
                   }
                 },
-                child: const Text('Ekle'),
+                child: Text(_t.text('add')),
               ),
             ],
           );
@@ -251,7 +254,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Yeni Ekle', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(_t.text('add_new'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -281,7 +284,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
     final events = plansProvider.events;
 
     if (events.isEmpty) {
-      return _buildEmptyState(theme, Icons.event_note_rounded, 'Henüz bir etkinlik eklemediniz.\nSağ alttaki + ile başlayın.');
+      return _buildEmptyState(theme, Icons.event_note_rounded, _t.text('events_empty'));
     }
 
     return ListView.builder(
@@ -289,7 +292,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
       itemCount: events.length,
       itemBuilder: (context, index) {
         final event = events[index];
-        final dateStr = DateFormat('d MMMM yyyy, EEEE').format(event.date);
+        final dateStr = DateFormat('d MMMM yyyy, EEEE', _lang).format(event.date);
 
         return Card(
           child: Padding(
@@ -313,7 +316,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
                         ),
                       ),
                       Text(
-                        DateFormat('MMM').format(event.date),
+                        DateFormat('MMM', _lang).format(event.date),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -367,7 +370,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
     final tasks = plansProvider.tasks;
 
     if (tasks.isEmpty) {
-      return _buildEmptyState(theme, Icons.checklist_rounded, 'Henüz bir görev eklemediniz.\nSağ alttaki + ile başlayın.');
+      return _buildEmptyState(theme, Icons.checklist_rounded, _t.text('tasks_empty'));
     }
 
     return ListView.builder(
@@ -395,9 +398,11 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
               ),
             ),
             subtitle: Text(
-              task.assignedTo == 'me'
-                  ? 'Sana atandı'
-                  : (task.assignedTo == 'partner' ? 'Partnerine atandı' : 'Ortak görev'),
+              _t.text(switch (plansProvider.assigneeOf(task)) {
+                'me' => 'task_assigned_me',
+                'partner' => 'task_assigned_partner',
+                _ => 'task_assigned_both',
+              }),
               style: const TextStyle(fontSize: 12),
             ),
             trailing: IconButton(
@@ -415,7 +420,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
     final items = plansProvider.shoppingList;
 
     if (items.isEmpty) {
-      return _buildEmptyState(theme, Icons.shopping_bag_outlined, 'Alışveriş listeniz boş.\nSağ alttaki + ile ürün ekleyin.');
+      return _buildEmptyState(theme, Icons.shopping_bag_outlined, _t.text('shopping_empty'));
     }
 
     return ListView.builder(
@@ -443,7 +448,14 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
               ),
             ),
             subtitle: Text(
-              'Ekleyen: ${item.addedBy} • ${item.category == "market" ? "Market" : "Ev"}',
+              _t.textf('shopping_added_by', {
+                'name': item.addedBy,
+                'category': _t.text(switch (item.category) {
+                  'market' => 'shopping_cat_market',
+                  'home' => 'shopping_cat_home',
+                  _ => 'shopping_cat_other',
+                }),
+              }),
               style: const TextStyle(fontSize: 12),
             ),
             trailing: IconButton(
