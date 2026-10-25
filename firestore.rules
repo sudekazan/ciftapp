@@ -1,0 +1,101 @@
+rules_version = '2';
+
+// Yanyana Firestore güvenlik kuralları.
+// - Çift belgelerini yalnızca üyeleri okuyup yazabilir; listeleme (tarama) kapalıdır.
+// - Partner, çift alanını davet kodu belgesi (invites/{kod}) üzerinden bulur ve
+//   yalnızca ikinci koltuk boşken kendini ekleyebilir.
+// - premiumUntil / premiumOwner alanlarını yalnızca Cloud Functions (Admin SDK) yazar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function coupleData(coupleId) {
+      return get(/databases/$(database)/documents/couples/$(coupleId)).data;
+    }
+
+    function isMember(data) {
+      return signedIn() && uid() in data.memberIds;
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    match /invites/{code} {
+      // Davet kodunu bilen giriş yapmış kullanıcı belgeyi okuyabilir (tek belge).
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.ownerId == uid()
+        && isMember(coupleData(request.resource.data.coupleId));
+      allow update: if signedIn()
+        && resource.data.ownerId == uid()
+        && request.resource.data.ownerId == uid()
+        && isMember(coupleData(request.resource.data.coupleId));
+      allow delete: if signedIn() && resource.data.ownerId == uid();
+    }
+
+    match /couples/{coupleId} {
+      // Üyelik değişmez ya da bir üye ayrılır ve kalan kişi tek üye olur.
+      function keepsMembers() {
+        return request.resource.data.memberIds == resource.data.memberIds
+          && request.resource.data.user1Id == resource.data.user1Id
+          && request.resource.data.user2Id == resource.data.user2Id;
+      }
+
+      function shrinksToOne() {
+        return request.resource.data.memberIds.size() == 1
+          && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+          && request.resource.data.user1Id == request.resource.data.memberIds[0]
+          && request.resource.data.user2Id == null;
+      }
+
+      function joinsWithInvite() {
+        return signedIn()
+          && resource.data.user2Id == null
+          && resource.data.user1Id != uid()
+          && request.resource.data.user2Id == uid()
+          && request.resource.data.memberIds == [resource.data.user1Id, uid()]
+          && get(/databases/$(database)/documents/invites/$(request.resource.data.joinCode)).data.coupleId == coupleId
+          && request.resource.data.tokens.diff(resource.data.tokens).affectedKeys().hasOnly([uid()])
+          && changedKeys().hasOnly(['user2Id', 'user2Name', 'memberIds', 'tokens', 'joinCode', 'pairedAt', 'updatedAt']);
+      }
+
+      allow get: if isMember(resource.data);
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.resource.data.user1Id == uid()
+        && request.resource.data.memberIds == [uid()]
+        && request.resource.data.user2Id == null
+        && request.resource.data.tokens is map
+        && !request.resource.data.keys().hasAny(['premiumUntil', 'premiumOwner']);
+
+      allow update: if (isMember(resource.data)
+          && !changedKeys().hasAny(['premiumUntil', 'premiumOwner', 'coupleId', 'inviteCode'])
+          && (keepsMembers() || shrinksToOne()))
+        || joinsWithInvite();
+
+      // Belge yalnızca tek kalan üye tarafından silinebilir (hesap silme).
+      allow delete: if isMember(resource.data) && resource.data.memberIds.size() == 1;
+
+      // Ortak içerik: anılar, görevler, notlar, cevaplar...
+      match /{collection}/{docId} {
+        allow read, write: if isMember(coupleData(coupleId));
+      }
+    }
+
+    // Abonelik bilgisi yalnızca sunucu tarafından yazılır.
+    match /users/{userId} {
+      allow read: if signedIn() && uid() == userId;
+      allow write: if false;
+    }
+  }
+}

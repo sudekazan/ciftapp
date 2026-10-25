@@ -12,6 +12,7 @@ import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
 
 class AppStateProvider extends ChangeNotifier {
+  final CoupleSyncService _sync;
   late UserModel _currentUser;
   String _currentLanguage = 'tr';
   ThemeMode _themeMode = ThemeMode.light;
@@ -19,6 +20,7 @@ class AppStateProvider extends ChangeNotifier {
   bool _hasCompletedSetup = false;
   String? _coupleId;
   StreamSubscription? _coupleSubscription;
+  bool _inviteEnsured = false;
 
   UserModel get currentUser => _currentUser;
   String get currentLanguage => _currentLanguage;
@@ -41,7 +43,8 @@ class AppStateProvider extends ChangeNotifier {
     await prefs.setInt('ciftapp_partner_utc_offset_min', minutes);
   }
 
-  AppStateProvider() {
+  AppStateProvider({CoupleSyncService? sync})
+      : _sync = sync ?? FirestoreCoupleSyncService.instance {
     _initDefaultUser();
     _loadFromPreferences();
   }
@@ -142,8 +145,11 @@ class AppStateProvider extends ChangeNotifier {
 
       // Initialize live Firestore sync if setup is finished
       if (_hasCompletedSetup) {
-        _coupleId ??= 'cpl_$inviteCode';
-        _startCoupleSync();
+        if (_coupleId == null) {
+          unawaited(_createOwnSpace());
+        } else {
+          _startCoupleSync();
+        }
       }
     } catch (e) {
       debugPrint('Error loading preferences: $e');
@@ -164,51 +170,91 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
+  /// Creates a fresh couple space for this user (setup without a code, after
+  /// leaving a couple, or when an earlier attempt failed while offline).
+  Future<void> _createOwnSpace() async {
+    final id = await _sync.createCoupleSpace(
+      inviteCode: _currentUser.inviteCode,
+      userName: _currentUser.name,
+      mode: _currentUser.mode.id,
+      startDate: _currentUser.relationshipStartDate,
+      fcmToken: NotificationService.instance.fcmToken,
+    );
+    if (id == null) return;
+    _coupleId = id;
+    _inviteEnsured = true;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ciftapp_couple_id', id);
+    _startCoupleSync();
+  }
+
   /// Starts real-time Firestore listener for live couple updates
   void _startCoupleSync() {
     if (_coupleId == null) return;
     _coupleSubscription?.cancel();
 
-    _coupleSubscription = FirestoreCoupleSyncService.instance.listenToCouple(
+    _coupleSubscription = _sync.listenToCouple(
       coupleId: _coupleId!,
-      onUpdate: (data) async {
-        bool changed = false;
-        final user2Name = data['user2Name'] as String?;
-
-        // Partner paired dynamically while app is open
-        if (user2Name != null && !_currentUser.isPaired) {
-          _currentUser = _currentUser.copyWith(
-            isPaired: true,
-            partnerName: user2Name,
-          );
-          changed = true;
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('ciftapp_is_paired', true);
-          await prefs.setString('ciftapp_partner_name', user2Name);
-        }
-
-        // Live heartbeat / Thinking of You pulse
-        final pulse = data['lastThinkingOfYou'];
-        if (pulse is Map<String, dynamic>) {
-          final senderName = pulse['senderName'] as String? ?? 'Partner';
-          final pulseTimeStr = pulse['iso'] as String?;
-          final pulseTime = pulseTimeStr != null ? DateTime.tryParse(pulseTimeStr) : null;
-
-          if (senderName != _currentUser.name && pulseTime != null) {
-            if (_currentUser.lastThinkingOfYou == null ||
-                pulseTime.isAfter(_currentUser.lastThinkingOfYou!)) {
-              receivePartnerThinkingOfYou();
-            }
-          }
-        }
-
-        if (changed) {
-          notifyListeners();
-        }
-      },
+      onUpdate: _onCoupleUpdate,
     );
 
     NotificationService.instance.subscribeToCouple(_coupleId!);
+  }
+
+  Future<void> _onCoupleUpdate(Map<String, dynamic> data) async {
+    final myUid = _sync.currentUid;
+    if (myUid == null) return;
+    final members = List<String>.from(data['memberIds'] as List? ?? const []);
+    if (!members.contains(myUid)) return;
+
+    final partnerId = members.where((m) => m != myUid).firstOrNull;
+    final partnerName = partnerId == null
+        ? null
+        : (data['user1Id'] == partnerId ? data['user1Name'] : data['user2Name']) as String?;
+    final paired = partnerId != null;
+
+    if (paired != _currentUser.isPaired ||
+        partnerName != _currentUser.partnerName ||
+        partnerId != _currentUser.partnerId) {
+      _currentUser = paired
+          ? _currentUser.copyWith(isPaired: true, partnerId: partnerId, partnerName: partnerName)
+          : _currentUser.copyWith(isPaired: false, clearPartner: true);
+      notifyListeners();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('ciftapp_is_paired', paired);
+      if (partnerName != null) {
+        await prefs.setString('ciftapp_partner_name', partnerName);
+      } else {
+        await prefs.remove('ciftapp_partner_name');
+      }
+    }
+
+    // Alone in this space (new user or partner left): keep the invite code
+    // pointing here so a partner can join.
+    if (!paired && !_inviteEnsured) {
+      _inviteEnsured = true;
+      unawaited(_sync.ensureInvite(
+        inviteCode: _currentUser.inviteCode,
+        coupleId: _coupleId!,
+        ownerName: _currentUser.name,
+      ));
+    }
+
+    // Live heartbeat / Thinking of You pulse
+    final pulse = data['lastThinkingOfYou'];
+    if (pulse is Map<String, dynamic>) {
+      final senderName = pulse['senderName'] as String? ?? 'Partner';
+      final pulseTimeStr = pulse['iso'] as String?;
+      final pulseTime = pulseTimeStr != null ? DateTime.tryParse(pulseTimeStr) : null;
+
+      if (senderName != _currentUser.name && pulseTime != null) {
+        if (_currentUser.lastThinkingOfYou == null ||
+            pulseTime.isAfter(_currentUser.lastThinkingOfYou!)) {
+          receivePartnerThinkingOfYou();
+        }
+      }
+    }
   }
 
   /// Finishes onboarding. When [partnerCode] is given the pairing must succeed:
@@ -226,21 +272,18 @@ class AppStateProvider extends ChangeNotifier {
 
     if (isPairingWithCode) {
       final result = await _pairOrThrow(partnerCode, name);
-      _coupleId = result['coupleId'] as String?;
-      resolvedPartnerName = result['partnerName'] as String?;
+      _coupleId = result.coupleId;
+      resolvedPartnerName = result.partnerName;
     } else {
-      try {
-        _coupleId = await FirestoreCoupleSyncService.instance.registerMyCoupleSpace(
-          inviteCode: _currentUser.inviteCode,
-          userName: name,
-          mode: mode.id,
-          startDate: startDate ?? _currentUser.relationshipStartDate,
-          fcmToken: NotificationService.instance.fcmToken,
-        );
-      } catch (e) {
-        debugPrint('Setup register space error: $e');
-        _coupleId = 'cpl_${_currentUser.inviteCode}';
-      }
+      // Offline: stays null and is retried on the next launch.
+      _coupleId = await _sync.createCoupleSpace(
+        inviteCode: _currentUser.inviteCode,
+        userName: name,
+        mode: mode.id,
+        startDate: startDate ?? _currentUser.relationshipStartDate,
+        fcmToken: NotificationService.instance.fcmToken,
+      );
+      _inviteEnsured = _coupleId != null;
     }
 
     _currentUser = _currentUser.copyWith(
@@ -274,9 +317,9 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   /// Pairs via the backend; any failure surfaces as a [PairingException].
-  Future<Map<String, dynamic>> _pairOrThrow(String code, String myName) async {
+  Future<PairingResult> _pairOrThrow(String code, String myName) async {
     try {
-      return await FirestoreCoupleSyncService.instance.pairWithInviteCode(
+      return await _sync.pairWithInviteCode(
         inviteCode: code,
         myName: myName.isEmpty ? 'Ben' : myName,
         fcmToken: NotificationService.instance.fcmToken,
@@ -345,7 +388,7 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
 
     if (_coupleId != null) {
-      FirestoreCoupleSyncService.instance.sendThinkingOfYouPulse(
+      _sync.sendThinkingOfYouPulse(
         _coupleId!,
         _currentUser.name.isEmpty ? 'Ben' : _currentUser.name,
       );
@@ -365,12 +408,16 @@ class AppStateProvider extends ChangeNotifier {
   /// and leaves the current (unpaired) state untouched.
   Future<void> pairWithCode(String code) async {
     final result = await _pairOrThrow(code, _currentUser.name);
-    _coupleId = result['coupleId'] as String?;
-    final resolvedPartner = result['partnerName'] as String?;
+    _coupleSubscription?.cancel();
+    if (_coupleId != null) {
+      NotificationService.instance.unsubscribeFromCouple(_coupleId!);
+    }
+    _coupleId = result.coupleId;
+    final resolvedPartner = result.partnerName;
 
     _currentUser = _currentUser.copyWith(
       isPaired: true,
-      partnerId: result['partnerId'] as String?,
+      partnerId: result.partnerId,
       partnerName: resolvedPartner,
     );
     notifyListeners();
@@ -387,12 +434,17 @@ class AppStateProvider extends ChangeNotifier {
     _startCoupleSync();
   }
 
+  /// Leaves the current couple. The partner keeps the shared space; this user
+  /// starts over in a fresh, empty space with their own invite code.
   Future<void> unpairCouple() async {
     _coupleSubscription?.cancel();
-    if (_coupleId != null) {
-      FirestoreCoupleSyncService.instance.unpair(_coupleId!);
-      NotificationService.instance.unsubscribeFromCouple(_coupleId!);
+    final oldCoupleId = _coupleId;
+    if (oldCoupleId != null) {
+      NotificationService.instance.unsubscribeFromCouple(oldCoupleId);
+      await _sync.leaveCouple(oldCoupleId);
     }
+    _coupleId = null;
+    _inviteEnsured = false;
 
     _currentUser = _currentUser.copyWith(
       isPaired: false,
@@ -404,6 +456,8 @@ class AppStateProvider extends ChangeNotifier {
     await prefs.setBool('ciftapp_is_paired', false);
     await prefs.remove('ciftapp_partner_name');
     await prefs.remove('ciftapp_couple_id');
+
+    await _createOwnSpace();
   }
 
   Future<void> upgradeToPremium() async {
@@ -416,7 +470,7 @@ class AppStateProvider extends ChangeNotifier {
   Future<void> deleteAccount() async {
     _coupleSubscription?.cancel();
     if (_coupleId != null) {
-      FirestoreCoupleSyncService.instance.unpair(_coupleId!);
+      await _sync.leaveCouple(_coupleId!);
       NotificationService.instance.unsubscribeFromCouple(_coupleId!);
       _coupleId = null;
     }

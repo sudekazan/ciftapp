@@ -4,6 +4,8 @@ import 'package:ciftapp/core/services/couple_sync_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fakes/fake_couple_sync.dart';
+
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 50));
 
 void main() {
@@ -65,5 +67,93 @@ void main() {
     expect(state.currentUser.nextReunionDate, isNull);
     expect(state.currentUser.reunionLocation, isNull);
     expect(state.currentUser.isPaired, isFalse);
+  });
+
+  group('with a couple backend', () {
+    late FakeCoupleSyncService backend;
+
+    setUp(() {
+      backend = FakeCoupleSyncService(uid: 'partner');
+      // The partner already created a space with this invite code.
+      backend.couples['cpl_p'] = {
+        'user1Id': 'partner',
+        'user1Name': 'Ayşe',
+        'user2Id': null,
+        'user2Name': null,
+        'memberIds': ['partner'],
+      };
+      backend.invites['CFT-ABCDEF'] = {
+        'coupleId': 'cpl_p',
+        'ownerId': 'partner',
+        'ownerName': 'Ayşe',
+      };
+      backend.uid = 'me';
+    });
+
+    test('pairing with a valid code pairs both sides', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      expect(state.currentUser.isPaired, isTrue);
+      expect(state.currentUser.partnerName, 'Ayşe');
+      expect(state.coupleId, 'cpl_p');
+      expect(backend.couples['cpl_p']!['memberIds'], ['partner', 'me']);
+    });
+
+    test('an invite code cannot be used twice', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+
+      backend.uid = 'stranger';
+      SharedPreferences.setMockInitialValues({}); // a different phone
+      final other = AppStateProvider(sync: backend);
+      await settle();
+      await expectLater(
+        other.pairWithCode('CFT-ABCDEF'),
+        throwsA(isA<PairingException>().having((e) => e.error, 'error', PairingError.alreadyUsed)),
+      );
+      expect(other.currentUser.isPaired, isFalse);
+    });
+
+    test('unpairCouple leaves the space and starts a fresh one', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      await state.unpairCouple();
+      await settle();
+
+      expect(state.currentUser.isPaired, isFalse);
+      expect(state.currentUser.partnerId, isNull);
+      expect(state.currentUser.partnerName, isNull);
+      expect(backend.couples['cpl_p']!['memberIds'], ['partner']);
+      expect(state.coupleId, isNot('cpl_p'));
+      expect(backend.invites[state.currentUser.inviteCode]!['coupleId'], state.coupleId);
+    });
+
+    test('partner leaving is reflected live', () async {
+      final state = AppStateProvider(sync: backend);
+      await settle();
+      await state.pairWithCode('CFT-ABCDEF');
+      await settle();
+
+      backend.remoteUpdate('cpl_p', {
+        'memberIds': ['me'],
+        'user1Id': 'me',
+        'user1Name': 'Ben',
+        'user2Id': null,
+        'user2Name': null,
+      });
+      await settle();
+
+      expect(state.currentUser.isPaired, isFalse);
+      // Invite code now points at the remaining space so a new partner can join.
+      expect(backend.invites[state.currentUser.inviteCode]!['coupleId'], 'cpl_p');
+    });
   });
 }
