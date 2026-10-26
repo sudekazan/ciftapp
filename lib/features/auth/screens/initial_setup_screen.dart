@@ -1121,7 +1121,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
           ),
           const SizedBox(height: 20),
 
-          // KVKK / GDPR & Age 17+ consent
+          // KVKK / GDPR & Age 18+ consent
           InkWell(
             onTap: () => setState(() => _consentAccepted = !_consentAccepted),
             borderRadius: BorderRadius.circular(12),

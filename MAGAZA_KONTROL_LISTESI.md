@@ -16,7 +16,7 @@ gizli anahtarlar, App Check, Apple/Google girişi) için `README.md` > "Yayın �
   - https://sudekazan.github.io/ciftapp/terms.html
   - https://sudekazan.github.io/ciftapp/privacy.html
 - [ ] Destek URL'si (https://sudekazan.github.io/ciftapp/support.html) ve `destek@yanyana.app` gerçekten çalışıyor
-- [ ] Yaş derecelendirme anketi 17+ ile tutarlı dolduruldu
+- [ ] Yaş derecelendirmesi 18+ (Override to Higher Age Rating) ile uygulama ve gizlilik metniyle tutarlı
 - [ ] App Privacy etiketleri (aşağıdaki tabloyla ve `ios/Runner/PrivacyInfo.xcprivacy` ile aynı)
 - [ ] İnceleme notu: iki test cihazı/hesabıyla eşleşme nasıl denenir (inceleme ekibi tek cihazla deniyor; davet kodu
       girilecek ikinci bir hesap/alan hazırlayın) ve sandbox ile Premium nasıl açılır

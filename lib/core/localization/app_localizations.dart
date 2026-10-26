@@ -208,7 +208,7 @@ class AppLocalizations {
       'capsule_free_note': 'Ücretsiz planda ayda {n} zaman kapsülü oluşturabilirsin.',
 
       // Kurulum ekranı
-      'setup_consent_snack': 'Lütfen 17 yaşından büyük olduğunuzu ve şartları kabul ettiğinizi onaylayın.',
+      'setup_consent_snack': 'Lütfen 18 yaşında veya daha büyük olduğunuzu ve şartları kabul ettiğinizi onaylayın.',
       'default_my_name': 'Ben',
       'setup_step1_label': '1. Adınız',
       'setup_step2_label': '2. Tarihimiz',
@@ -265,7 +265,7 @@ class AppLocalizations {
       'setup_create_sub': 'Alanınızı kurun ve partnerinizi davet ederek birlikte başlayın.',
       'setup_your_code': 'Senin Davet Kodun:',
       'share': 'Paylaş',
-      'consent_prefix': '17 yaşından büyüğüm. ',
+      'consent_prefix': '18 yaşında veya daha büyüğüm. ',
       'consent_privacy': 'Gizlilik Politikası',
       'consent_and': ' ve ',
       'consent_terms': 'Kullanım Şartları',
@@ -695,7 +695,7 @@ class AppLocalizations {
       'capsule_free_note': 'The free plan includes {n} time capsule per month.',
 
       // Kurulum ekranı
-      'setup_consent_snack': 'Please confirm that you are over 17 and accept the terms.',
+      'setup_consent_snack': 'Please confirm that you are 18 or older and accept the terms.',
       'default_my_name': 'Me',
       'setup_step1_label': '1. Name',
       'setup_step2_label': '2. Date',
@@ -752,7 +752,7 @@ class AppLocalizations {
       'setup_create_sub': 'Set up your space and invite your partner to begin together.',
       'setup_your_code': 'Your Invite Code:',
       'share': 'Share',
-      'consent_prefix': 'I am over 17 and accept the ',
+      'consent_prefix': 'I am 18 or older and accept the ',
       'consent_privacy': 'Privacy Policy',
       'consent_and': ' and ',
       'consent_terms': 'Terms of Use',
