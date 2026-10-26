@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/relationship_mode.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/services/invite_service.dart';
 import '../../auth/screens/pairing_screen.dart';
 
 class DistanceHeaderCard extends StatelessWidget {
@@ -218,25 +219,29 @@ class DistanceHeaderCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: user.inviteCode));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.text('invite_copied_send')),
-                          backgroundColor: AppColors.primary,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.primary),
-                    label: Text(l10n.text('copy'), style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      elevation: 0,
-                      // The theme's full-width minimum size cannot be used inside a Row.
-                      minimumSize: const Size(0, 36),
+                  Builder(
+                    builder: (buttonContext) => ElevatedButton.icon(
+                      onPressed: () => InviteService.share(buttonContext, user.inviteCode, source: 'home'),
+                      // Long press still copies the bare code.
+                      onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: user.inviteCode));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.text('invite_copied_send')),
+                            backgroundColor: AppColors.primary,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.send_rounded, size: 14, color: AppColors.primary),
+                      label: Text(l10n.text('invite_btn'), style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        elevation: 0,
+                        // The theme's full-width minimum size cannot be used inside a Row.
+                        minimumSize: const Size(0, 36),
+                      ),
                     ),
                   ),
                 ],

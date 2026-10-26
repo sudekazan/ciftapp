@@ -5,6 +5,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/premium/limits.dart';
 import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../auth/widgets/invite_partner_sheet.dart';
 
 class ThinkingOfYouButton extends StatefulWidget {
   const ThinkingOfYouButton({super.key});
@@ -43,6 +44,15 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
 
   Future<void> _onTapHeart() async {
     final appState = Provider.of<AppStateProvider>(context, listen: false);
+    // Nobody would receive it: invite instead of spending a free pulse.
+    if (!appState.currentUser.isPaired) {
+      await InvitePartnerSheet.show(
+        context,
+        source: 'pulse',
+        message: AppLocalizations.of(context).text('solo_pulse_sheet'),
+      );
+      return;
+    }
     if (!appState.canSendPulse) {
       await PremiumGate.openPaywall(context, PaywallSource.pulseLimit);
       return;
@@ -124,6 +134,7 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final user = appState.currentUser;
+    final isPaired = user.isPaired;
 
     // Check if a new live partner heartbeat pulse was received
     if (appState.lastPulseFromPartner &&
@@ -171,10 +182,10 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    l10n.text('thinking_of_you_sub'),
+                    l10n.text(isPaired ? 'thinking_of_you_sub' : 'solo_pulse_hint'),
                     style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                   ),
-                  if (!user.isPremium) ...[
+                  if (isPaired && !user.isPremium) ...[
                     const SizedBox(height: 4),
                     Text(
                       l10n.textf('pulse_remaining', {
@@ -191,29 +202,33 @@ class _ThinkingOfYouButtonState extends State<ThinkingOfYouButton>
 
           // Glowing Pulsating Heart
           GestureDetector(
+            key: const Key('pulse_heart'),
             onTap: _onTapHeart,
             child: ScaleTransition(
               scale: _scaleAnimation,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppColors.heartGradient,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: _recentlyTapped ? 0.6 : 0.35),
-                      blurRadius: _recentlyTapped ? 30 : 20,
-                      spreadRadius: _recentlyTapped ? 6 : 2,
-                      offset: const Offset(0, 6),
+              child: Opacity(
+                opacity: isPaired ? 1 : 0.45,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: AppColors.heartGradient,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: _recentlyTapped ? 0.6 : 0.35),
+                        blurRadius: _recentlyTapped ? 30 : 20,
+                        spreadRadius: _recentlyTapped ? 6 : 2,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      color: Colors.white,
+                      size: 52,
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.favorite_rounded,
-                    color: Colors.white,
-                    size: 52,
                   ),
                 ),
               ),

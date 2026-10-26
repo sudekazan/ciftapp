@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_links.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -9,6 +8,7 @@ import '../../../core/models/relationship_mode.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/services/account_service.dart';
 import '../../../core/services/couple_sync_service.dart';
+import '../../../core/services/invite_service.dart';
 import '../../profile/widgets/account_backup_card.dart';
 import '../../main_navigation_screen.dart';
 
@@ -184,14 +184,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     } else if (uid != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_t.text('account_signin_no_space'))));
     }
-  }
-
-  void _shareInviteCode(String code) {
-    final l10n = AppLocalizations.of(context);
-    SharePlus.instance.share(ShareParams(
-      text: l10n.textf('invite_share_text', {'code': code, 'link': AppLinks.inviteUrl(code)}),
-      subject: l10n.text('invite_share_subject'),
-    ));
   }
 
   @override
@@ -1089,17 +1081,38 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                                   ),
                                 ],
                               ),
-                              OutlinedButton.icon(
-                                onPressed: () => _shareInviteCode(appState.currentUser.inviteCode),
-                                icon: const Icon(Icons.share_rounded, size: 14),
-                                label: Text(_t.text('share'), style: const TextStyle(fontSize: 11)),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  side: const BorderSide(color: AppColors.primary),
+                              Builder(
+                                builder: (buttonContext) => ElevatedButton.icon(
+                                  onPressed: () => InviteService.share(
+                                    buttonContext,
+                                    appState.currentUser.inviteCode,
+                                    source: 'setup',
+                                  ),
+                                  icon: const Icon(Icons.send_rounded, size: 14),
+                                  label: Text(_t.text('invite_partner_btn'), style: const TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    // The theme's full-width minimum size cannot be used inside a Row.
+                                    minimumSize: const Size(0, 36),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.lightbulb_outline_rounded, size: 16, color: AppColors.accentGold),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _t.text('setup_create_hint'),
+                                style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12, height: 1.35),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1190,23 +1203,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
                 : Text(_t.text('setup_start_btn')),
-          ),
-          const SizedBox(height: 12),
-
-          Center(
-            child: TextButton(
-              onPressed: () {
-                setState(() => _pathChoice = 'create_new');
-                _finishSetup();
-              },
-              child: Text(
-                _t.text('setup_explore_alone'),
-                style: TextStyle(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ),
           ),
         ],
       ),

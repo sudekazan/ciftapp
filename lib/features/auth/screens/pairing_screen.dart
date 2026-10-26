@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_links.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/services/couple_sync_service.dart';
+import '../../../core/services/invite_service.dart';
 
 class PairingScreen extends StatefulWidget {
   final bool isModal;
@@ -43,14 +42,6 @@ class _PairingScreenState extends State<PairingScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
-  }
-
-  void _shareCode(String code) {
-    final l10n = AppLocalizations.of(context);
-    SharePlus.instance.share(ShareParams(
-      text: l10n.textf('invite_share_text', {'code': code, 'link': AppLinks.inviteUrl(code)}),
-      subject: l10n.text('invite_share_subject'),
-    ));
   }
 
   Future<void> _submitCode() async {
@@ -223,7 +214,7 @@ class _PairingScreenState extends State<PairingScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _shareCode(appState.currentUser.inviteCode),
+                          onPressed: () => InviteService.share(context, appState.currentUser.inviteCode, source: 'pairing'),
                           icon: const Icon(Icons.share_rounded, size: 18),
                           label: Text(l10n.text('share_code')),
                           style: ElevatedButton.styleFrom(

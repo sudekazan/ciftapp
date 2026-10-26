@@ -5,6 +5,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/together_provider.dart';
 import '../widgets/pack_selector.dart';
+import '../widgets/solo_compare_banner.dart';
 
 class WhoMoreQuizScreen extends StatefulWidget {
   const WhoMoreQuizScreen({super.key});
@@ -43,56 +44,59 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Score Banner
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: AppColors.heartGradient,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+            if (!appState.currentUser.isPaired)
+              const SoloCompareBanner(gradient: AppColors.heartGradient, icon: Icons.people_alt_rounded)
+            else
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: AppColors.heartGradient,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
-                    child: const Icon(Icons.people_alt_rounded, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.textf('who_more_score', {'p': percent}),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.textf('who_more_score_sub', {'total': totalVoted, 'n': agreedCount}),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ],
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.people_alt_rounded, color: Colors.white, size: 28),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.textf('who_more_score', {'p': percent}),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.textf('who_more_score_sub', {'total': totalVoted, 'n': agreedCount}),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 16),
             PackSelector(
               packs: togetherProvider.whoMorePacks,
@@ -110,6 +114,8 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
 
               final isVoted = q.myVote != null;
               final isAgreed = q.isAgreed;
+              // Until the partner votes there is nothing to agree or disagree on.
+              final isWaiting = isVoted && !q.isBothVoted;
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -134,24 +140,42 @@ class _WhoMoreQuizScreenState extends State<WhoMoreQuizScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: isAgreed
-                                    ? AppColors.accentTeal.withValues(alpha: 0.15)
-                                    : AppColors.accentGold.withValues(alpha: 0.15),
+                                color: isWaiting
+                                    ? AppColors.textSecondary.withValues(alpha: 0.12)
+                                    : isAgreed
+                                        ? AppColors.accentTeal.withValues(alpha: 0.15)
+                                        : AppColors.accentGold.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    isAgreed ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                                    isWaiting
+                                        ? Icons.hourglass_empty_rounded
+                                        : isAgreed
+                                            ? Icons.check_circle_rounded
+                                            : Icons.info_outline_rounded,
                                     size: 13,
-                                    color: isAgreed ? AppColors.accentTeal : AppColors.accentGold,
+                                    color: isWaiting
+                                        ? AppColors.textSecondary
+                                        : isAgreed
+                                            ? AppColors.accentTeal
+                                            : AppColors.accentGold,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    l10n.text(isAgreed ? 'who_more_agreed' : 'who_more_disagreed'),
+                                    l10n.text(isWaiting
+                                        ? 'quiz_waiting_partner'
+                                        : isAgreed
+                                            ? 'who_more_agreed'
+                                            : 'who_more_disagreed'),
                                     style: TextStyle(
-                                      color: isAgreed ? AppColors.accentTeal : AppColors.accentGold,
+                                      color: isWaiting
+                                          ? AppColors.textSecondary
+                                          : isAgreed
+                                              ? AppColors.accentTeal
+                                              : AppColors.accentGold,
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
                                     ),

@@ -48,7 +48,8 @@ Takip (tracking / reklam kimliği): **Hayır**. Hizmet sağlayıcılar (Google F
 "paylaşım" kapsamına girmez.
 
 ## Son uçtan uca test (TestFlight / kapalı test, iki cihaz)
-- [ ] Cihaz A alan oluşturur, cihaz B davet bağlantısı/koduyla eşleşir
+- [ ] Cihaz A eşleşmeden önce: kurulumdan sonra paywall açılmaz; kalp, saat, günün sorusu ve testler davet gösterir, sinyal hakkı düşmez
+- [ ] Cihaz A alan oluşturur, cihaz B davet bağlantısı/koduyla eşleşir; iki cihazda da paywall bir kez "Bağlandınız!" mesajıyla açılır
 - [ ] Anı (fotoğraflı), görev, not, kapsül, günün sorusu iki tarafta da görünür
 - [ ] "Seni düşünüyorum" ve günün sorusu bildirimleri karşı cihaza gelir (uygulama kapalıyken de)
 - [ ] A satın alır → B de Premium olur (webhook); eşleşme sonlanınca B'nin Premium'u kapanır

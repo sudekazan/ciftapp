@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../auth/widgets/invite_partner_sheet.dart';
 
 class DualClockCard extends StatefulWidget {
   const DualClockCard({super.key});
@@ -92,6 +93,8 @@ class _DualClockCardState extends State<DualClockCard> {
     final diffMinutes = partnerOffset - myOffset;
     final partnerTime = _now.toUtc().add(Duration(minutes: partnerOffset));
     final partnerLabel = appState.currentUser.partnerName ?? l10n.text('partner');
+    // Before pairing the partner side is a preview: their zone is unknown.
+    final isPaired = appState.currentUser.isPaired;
 
     final diffHours = diffMinutes / 60;
     final diffText = diffMinutes == 0
@@ -131,21 +134,22 @@ class _DualClockCardState extends State<DualClockCard> {
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.secondarySoft.withValues(alpha: isDark ? 0.2 : 0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  diffText,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 11,
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.bold,
+              if (isPaired)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondarySoft.withValues(alpha: isDark ? 0.2 : 0.7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    diffText,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 11,
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 18),
@@ -197,7 +201,11 @@ class _DualClockCardState extends State<DualClockCard> {
               Expanded(
                 child: GestureDetector(
                 // Picked automatically from the partner's phone when available.
-                onTap: appState.isPartnerTimeZoneAutomatic ? null : () => _pickPartnerOffset(context, appState),
+                onTap: !isPaired
+                    ? () => InvitePartnerSheet.show(context, source: 'clock', message: l10n.text('solo_clock_sheet'))
+                    : appState.isPartnerTimeZoneAutomatic
+                        ? null
+                        : () => _pickPartnerOffset(context, appState),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -210,9 +218,17 @@ class _DualClockCardState extends State<DualClockCard> {
                       Row(
                         children: [
                           Icon(
-                            isPartnerDaytime ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                            !isPaired
+                                ? Icons.person_add_alt_1_rounded
+                                : isPartnerDaytime
+                                    ? Icons.wb_sunny_rounded
+                                    : Icons.nightlight_round,
                             size: 14,
-                            color: isPartnerDaytime ? AppColors.accentGold : AppColors.secondary,
+                            color: !isPaired
+                                ? AppColors.primary
+                                : isPartnerDaytime
+                                    ? AppColors.accentGold
+                                    : AppColors.secondary,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -222,27 +238,37 @@ class _DualClockCardState extends State<DualClockCard> {
                               style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          if (!appState.isPartnerTimeZoneAutomatic)
+                          if (isPaired && !appState.isPartnerTimeZoneAutomatic)
                             Icon(Icons.edit_rounded, size: 12, color: AppColors.textSecondary),
                         ],
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        timeFormatter.format(partnerTime),
+                        isPaired ? timeFormatter.format(partnerTime) : '--:--',
                         style: theme.textTheme.displayLarge?.copyWith(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          color: !isPaired
+                              ? AppColors.textSecondary
+                              : isDark
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        appState.hasPartnerTimeZone
-                            ? l10n.text(isPartnerDaytime ? 'clock_partner_day' : 'clock_partner_night')
-                            : l10n.text('clock_pick_zone'),
+                        !isPaired
+                            ? l10n.text('solo_clock_hint')
+                            : appState.hasPartnerTimeZone
+                                ? l10n.text(isPartnerDaytime ? 'clock_partner_day' : 'clock_partner_night')
+                                : l10n.text('clock_pick_zone'),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 11,
-                          color: isPartnerDaytime ? AppColors.accentGold : AppColors.secondary,
+                          color: !isPaired
+                              ? AppColors.primary
+                              : isPartnerDaytime
+                                  ? AppColors.accentGold
+                                  : AppColors.secondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

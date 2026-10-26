@@ -271,7 +271,6 @@ class AppLocalizations {
       'consent_terms': 'Kullanım Şartları',
       'consent_suffix': '’nı okudum, onaylıyorum ve verilerimin bu metinde belirtilen hizmet sağlayıcılarca yurt dışında işlenmesine açık rıza veriyorum.',
       'setup_start_btn': 'Yanyana’yı Başlat ❤️',
-      'setup_explore_alone': 'Şimdilik Tek Başıma İncele',
 
       // Hayaller ve aşk kapsülü
       'dream_title_label': 'Birlikte ne yapmak istersiniz?',
@@ -484,6 +483,23 @@ class AppLocalizations {
       // Ömür boyu plan
       'lifetime_plan': 'Ömür Boyu Premium',
       'plan_lifetime_detail': 'Tek seferlik ödeme, yenileme yok • Hediye için ideal',
+
+      // Partnersiz kullanım
+      'invite_partner_btn': 'Partnerine Gönder',
+      'invite_btn': 'Davet Et',
+      'invite_sheet_title': 'Partnerini davet et 💞',
+      'invite_sheet_body': 'Davet kodunu gönder; partnerin kodu girdiği anda alanınız birleşir.',
+      'setup_create_hint': 'Partnerin katılana kadar anı, hayal ve plan ekleyebilirsin; katıldığında hepsini görecek.',
+      'solo_pulse_hint': 'Partnerin bağlandığında tek dokunuşla ona kalp gönder.',
+      'solo_pulse_sheet': '"Seni düşünüyorum" sinyali partnerinin telefonuna gider. Önce partnerini bağla, sonra ilk kalbi gönder.',
+      'solo_clock_hint': 'Partnerin katılınca saatini burada göreceksin.',
+      'solo_clock_sheet': 'Partnerin katıldığında saat dilimi telefonundan otomatik gelir; aranızdaki saat farkını burada görürsün.',
+      'solo_dq_locked': 'Partnerini bağla, cevabını görsün 🔒',
+      'solo_dq_sheet': 'Cevabın kaydedildi. Partnerin katılıp aynı soruyu cevapladığında ikiniz de birbirinizin cevabını göreceksiniz.',
+      'solo_quiz_banner': 'Partnerin katılınca cevaplarınızı karşılaştırın.',
+      'solo_quiz_sheet': 'Cevapların saklanıyor. Partnerin katılıp aynı soruları cevapladığında ne kadar uyumlu olduğunuzu göreceksiniz.',
+      'quiz_waiting_partner': 'Partnerin bekleniyor',
+      'paywall_reason_paired': 'Bağlandınız! 🎉 Tek üyelik ikinizi birden Premium yapar.',
     },
     'en': {
       'app_name': 'Yanyana',
@@ -742,7 +758,6 @@ class AppLocalizations {
       'consent_terms': 'Terms of Use',
       'consent_suffix': ', and I consent to my data being processed abroad by the service providers listed there.',
       'setup_start_btn': 'Start Yanyana ❤️',
-      'setup_explore_alone': 'Explore on My Own for Now',
 
       // Hayaller ve aşk kapsülü
       'dream_title_label': 'What would you like to do together?',
@@ -955,6 +970,23 @@ class AppLocalizations {
       // Ömür boyu plan
       'lifetime_plan': 'Lifetime Premium',
       'plan_lifetime_detail': 'One-time payment, no renewals • A perfect gift',
+
+      // Using the app before pairing
+      'invite_partner_btn': 'Send to Partner',
+      'invite_btn': 'Invite',
+      'invite_sheet_title': 'Invite your partner 💞',
+      'invite_sheet_body': 'Send your invite code; your spaces connect as soon as your partner enters it.',
+      'setup_create_hint': 'Until your partner joins you can add memories, dreams and plans; they will see everything once they join.',
+      'solo_pulse_hint': 'Once your partner connects, send them a heart with one tap.',
+      'solo_pulse_sheet': 'The "thinking of you" signal goes to your partner\'s phone. Connect your partner first, then send the first heart.',
+      'solo_clock_hint': "You'll see your partner's time here once they join.",
+      'solo_clock_sheet': "When your partner joins, their time zone comes from their phone automatically and you'll see the time difference here.",
+      'solo_dq_locked': 'Connect your partner so they can see your answer 🔒',
+      'solo_dq_sheet': 'Your answer is saved. Once your partner joins and answers the same question, you will both see each other\'s answers.',
+      'solo_quiz_banner': 'Compare your answers once your partner joins.',
+      'solo_quiz_sheet': 'Your answers are kept. Once your partner joins and answers the same questions, you will see how well you match.',
+      'quiz_waiting_partner': 'Waiting for partner',
+      'paywall_reason_paired': "You're connected! 🎉 One membership makes you both Premium.",
     },
   };
 

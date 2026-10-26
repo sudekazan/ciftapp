@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/together_provider.dart';
+import '../../auth/widgets/invite_partner_sheet.dart';
 
 class DailyQuestionPreviewCard extends StatelessWidget {
   final VoidCallback onOpenTogether;
@@ -92,7 +93,36 @@ class DailyQuestionPreviewCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          if (question.isRevealed)
+          if (!appState.currentUser.isPaired && question.isMyAnswered)
+            InkWell(
+              onTap: () => InvitePartnerSheet.show(
+                context,
+                source: 'daily_question',
+                message: l10n.text('solo_dq_sheet'),
+              ),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.send_rounded, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.text('solo_dq_locked'),
+                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                  ],
+                ),
+              ),
+            )
+          else if (question.isRevealed)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(

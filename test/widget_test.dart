@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ciftapp/core/providers/app_state_provider.dart';
+import 'package:ciftapp/features/auth/widgets/invite_partner_sheet.dart';
 import 'package:ciftapp/features/premium/screens/paywall_screen.dart';
 import 'package:ciftapp/main.dart';
 import 'package:provider/provider.dart';
@@ -76,25 +78,77 @@ void main() {
     expect(find.text('Çift Alanınızı Başlatalım ✨'), findsOneWidget);
   });
 
-  testWidgets('a dismissible paywall is shown once right after setup', (WidgetTester tester) async {
+  // The home screen has live clocks, so pump fixed durations instead of settling.
+  Future<void> pumpFor(WidgetTester tester, int ms) async {
+    for (var i = 0; i < ms ~/ 100; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
+  testWidgets('no paywall is pushed after setup while the user has no partner', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({'ciftapp_setup_completed': true, 'ciftapp_user_name': 'Sude'});
 
-    // The home screen has live clocks, so pump fixed durations instead of settling.
-    Future<void> pumpFor(int ms) async {
-      for (var i = 0; i < ms ~/ 100; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-    }
+    await tester.pumpWidget(MultiProvider(providers: appProviders(), child: const CiftApp()));
+    await pumpFor(tester, 4000);
+
+    expect(find.byType(PaywallScreen), findsNothing);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('ciftapp_paired_paywall_shown'), isNull);
+  });
+
+  testWidgets('a dismissible paywall is shown once after pairing', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'ciftapp_setup_completed': true,
+      'ciftapp_user_name': 'Sude',
+      'ciftapp_is_paired': true,
+      'ciftapp_partner_name': 'Ali',
+    });
 
     await tester.pumpWidget(MultiProvider(providers: appProviders(), child: const CiftApp()));
-    await pumpFor(1500);
+    await pumpFor(tester, 4000);
 
     expect(find.byType(PaywallScreen), findsOneWidget);
+    expect(find.text('Bağlandınız! 🎉 Tek üyelik ikinizi birden Premium yapar.'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close_rounded));
-    await pumpFor(1000);
+    await pumpFor(tester, 1000);
     expect(find.byType(PaywallScreen), findsNothing);
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool('ciftapp_onboarding_paywall_shown'), isTrue);
+    expect(prefs.getBool('ciftapp_paired_paywall_shown'), isTrue);
+  });
+
+  testWidgets('users who saw the old post-setup paywall are not asked again', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'ciftapp_setup_completed': true,
+      'ciftapp_user_name': 'Sude',
+      'ciftapp_is_paired': true,
+      'ciftapp_onboarding_paywall_shown': true,
+    });
+
+    await tester.pumpWidget(MultiProvider(providers: appProviders(), child: const CiftApp()));
+    await pumpFor(tester, 4000);
+
+    expect(find.byType(PaywallScreen), findsNothing);
+  });
+
+  testWidgets('without a partner the pulse invites instead of spending a free signal', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'ciftapp_setup_completed': true,
+      'ciftapp_user_name': 'Sude',
+      'ciftapp_mode': 'long_distance',
+    });
+
+    await tester.pumpWidget(MultiProvider(providers: appProviders(), child: const CiftApp()));
+    await pumpFor(tester, 1000);
+
+    final heart = find.byKey(const Key('pulse_heart'));
+    await tester.ensureVisible(heart);
+    await tester.tap(heart);
+    await pumpFor(tester, 1000);
+
+    expect(find.byType(InvitePartnerSheet), findsOneWidget);
+    expect(find.text('Partnerine Gönder'), findsOneWidget);
+    final appState = Provider.of<AppStateProvider>(tester.element(find.byType(InvitePartnerSheet)), listen: false);
+    expect(appState.pulsesSentToday, 0);
   });
 }

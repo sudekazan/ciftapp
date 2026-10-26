@@ -33,7 +33,8 @@ class PaywallScreen extends StatefulWidget {
       PaywallSource.questionArchive =>
         l10n.textf('paywall_reason_questionArchive', {'n': Limits.freeQuestionArchiveDays}),
       PaywallSource.questionPack => l10n.text('paywall_reason_questionPack'),
-      PaywallSource.profile || PaywallSource.onboarding => null,
+      PaywallSource.paired => l10n.text('paywall_reason_paired'),
+      PaywallSource.profile => null,
     };
   }
 
@@ -244,7 +245,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.lock_open_rounded, color: AppColors.accentGold, size: 20),
+                    Icon(
+                      widget.source == PaywallSource.paired ? Icons.favorite_rounded : Icons.lock_open_rounded,
+                      color: AppColors.accentGold,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(child: Text(reason, style: const TextStyle(fontSize: 12.5, height: 1.35))),
                   ],

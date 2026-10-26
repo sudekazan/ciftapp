@@ -9,7 +9,8 @@ import '../services/analytics_service.dart';
 /// analytics.
 enum PaywallSource {
   profile,
-  onboarding,
+  /// Once, right after the couple pairs.
+  paired,
   memoryLimit,
   photoLimit,
   pulseLimit,

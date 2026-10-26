@@ -23,49 +23,61 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
-  bool _notificationPromptChecked = false;
-  bool _onboardingPromptsDone = false;
+  bool _firstFrameDone = false;
+  bool _pairingPromptsStarted = false;
 
   static const _notifPromptKey = 'ciftapp_notif_prompted';
-  static const _onboardingPaywallKey = 'ciftapp_onboarding_paywall_shown';
+  static const _pairedPaywallKey = 'ciftapp_paired_paywall_shown';
+
+  /// Set by builds that showed a paywall right after setup.
+  static const _legacyOnboardingPaywallKey = 'ciftapp_onboarding_paywall_shown';
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _runOnboardingPrompts());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _firstFrameDone = true;
+      _maybeStartPairingPrompts();
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Ask for notifications once the user is paired: by then they understand
-    // why (partner pulses, answers, memories).
-    final isPaired = context.watch<AppStateProvider>().currentUser.isPaired;
-    if (_onboardingPromptsDone && isPaired && !_notificationPromptChecked) {
-      _notificationPromptChecked = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskForNotifications());
-    }
+    // Also fires when the partner joins while this screen is open.
+    context.watch<AppStateProvider>();
+    if (_firstFrameDone) WidgetsBinding.instance.addPostFrameCallback((_) => _maybeStartPairingPrompts());
   }
 
-  /// Right after setup: a dismissible paywall once (the highest-converting
-  /// moment for couple apps), then the notification prompt. Sequenced so the
-  /// two never overlap.
-  Future<void> _runOnboardingPrompts() async {
+  /// Nothing is prompted before pairing: the paywall sells "one membership,
+  /// two people" and notifications are about the partner. Once paired, a
+  /// dismissible paywall is shown once, then the notification prompt,
+  /// sequenced so the two never overlap.
+  Future<void> _maybeStartPairingPrompts() async {
+    if (!mounted || _pairingPromptsStarted) return;
+    if (!Provider.of<AppStateProvider>(context, listen: false).currentUser.isPaired) return;
+    _pairingPromptsStarted = true;
+    await _maybeShowPairedPaywall();
+    if (!mounted) return;
+    await _maybeAskForNotifications();
+  }
+
+  Future<void> _maybeShowPairedPaywall() async {
     final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final isPremium = PremiumGate.isPremium(context);
-    if (!(prefs.getBool(_onboardingPaywallKey) ?? false) && !isPremium && PurchaseService.instance.isConfigured) {
-      await prefs.setBool(_onboardingPaywallKey, true);
-      if (!mounted) return;
-      await PremiumGate.openPaywall(context, PaywallSource.onboarding);
+    if ((prefs.getBool(_pairedPaywallKey) ?? false) || !PurchaseService.instance.isConfigured) return;
+    // Users of earlier builds already had their one prompt after setup.
+    if (prefs.getBool(_legacyOnboardingPaywallKey) ?? false) {
+      await prefs.setBool(_pairedPaywallKey, true);
+      return;
     }
+    // The partner's membership syncs right after pairing; let it arrive so a
+    // couple that already has Premium is not asked to buy it again.
+    await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    _onboardingPromptsDone = true;
-    if (Provider.of<AppStateProvider>(context, listen: false).currentUser.isPaired && !_notificationPromptChecked) {
-      _notificationPromptChecked = true;
-      await _maybeAskForNotifications();
-    }
+    await prefs.setBool(_pairedPaywallKey, true);
+    if (!mounted || PremiumGate.isPremium(context)) return;
+    await PremiumGate.openPaywall(context, PaywallSource.paired);
   }
 
   Future<void> _maybeAskForNotifications() async {

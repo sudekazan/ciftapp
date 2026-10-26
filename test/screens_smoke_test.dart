@@ -10,31 +10,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   for (final lang in ['tr', 'en']) {
     for (final mode in ['long_distance', 'co_living']) {
-      testWidgets('all tabs render ($lang, $mode)', (tester) async {
-        SharedPreferences.setMockInitialValues({
-          'ciftapp_setup_completed': true,
-          'ciftapp_user_name': 'Sude',
-          'ciftapp_language': lang,
-          'ciftapp_mode': mode,
-          'ciftapp_onboarding_paywall_shown': true,
-        });
-        Future<void> pumpFor(int ms) async {
-          for (var i = 0; i < ms ~/ 100; i++) {
-            await tester.pump(const Duration(milliseconds: 100));
+      for (final paired in [false, true]) {
+        testWidgets('all tabs render ($lang, $mode, ${paired ? 'paired' : 'solo'})', (tester) async {
+          SharedPreferences.setMockInitialValues({
+            'ciftapp_setup_completed': true,
+            'ciftapp_user_name': 'Sude',
+            'ciftapp_language': lang,
+            'ciftapp_mode': mode,
+            'ciftapp_is_paired': paired,
+            'ciftapp_partner_name': 'Ali',
+            'ciftapp_paired_paywall_shown': true,
+          });
+          Future<void> pumpFor(int ms) async {
+            for (var i = 0; i < ms ~/ 100; i++) {
+              await tester.pump(const Duration(milliseconds: 100));
+            }
           }
-        }
 
-        await tester.pumpWidget(MultiProvider(providers: appProviders(), child: const CiftApp()));
-        await pumpFor(800);
+          await tester.pumpWidget(MultiProvider(providers: appProviders(), child: const CiftApp()));
+          await pumpFor(800);
 
-        final labels = lang == 'tr'
-            ? ['Hayallerimiz', 'Planlar', 'Birlikte', 'Anılar', 'Ana Sayfa']
-            : ['Bucket List', 'Plans', 'Together', 'Memories', 'Home'];
-        for (final label in labels) {
-          await tester.tap(find.text(label).last);
-          await pumpFor(600);
-        }
-      });
+          final labels = lang == 'tr'
+              ? ['Hayallerimiz', 'Planlar', 'Birlikte', 'Anılar', 'Ana Sayfa']
+              : ['Bucket List', 'Plans', 'Together', 'Memories', 'Home'];
+          for (final label in labels) {
+            await tester.tap(find.text(label).last);
+            await pumpFor(600);
+          }
+        });
+      }
     }
   }
 }

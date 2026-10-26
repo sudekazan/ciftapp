@@ -7,6 +7,7 @@ import '../../../core/premium/limits.dart';
 import '../../../core/premium/premium_gate.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/together_provider.dart';
+import '../../auth/widgets/invite_partner_sheet.dart';
 
 class DailyQuestionDetailScreen extends StatefulWidget {
   const DailyQuestionDetailScreen({super.key});
@@ -163,7 +164,36 @@ class _DailyQuestionDetailScreenState extends State<DailyQuestionDetailScreen> {
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            if (!question.isMyAnswered)
+            if (!appState.currentUser.isPaired)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.favorite_border_rounded, color: AppColors.primary, size: 32),
+                    const SizedBox(height: 10),
+                    Text(
+                      l10n.text('solo_dq_locked'),
+                      style: theme.textTheme.titleMedium?.copyWith(fontSize: 15),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => InvitePartnerSheet.show(
+                        context,
+                        source: 'daily_question',
+                        message: l10n.text('solo_dq_sheet'),
+                      ),
+                      icon: const Icon(Icons.send_rounded, size: 16),
+                      label: Text(l10n.text('invite_btn')),
+                    ),
+                  ],
+                ),
+              )
+            else if (!question.isMyAnswered)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(

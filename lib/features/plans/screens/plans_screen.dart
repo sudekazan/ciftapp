@@ -113,6 +113,8 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
   void _showAddTaskDialog() {
     final titleController = TextEditingController();
     String assignedTo = 'both';
+    // A task can't go to a partner who hasn't joined yet.
+    final isPaired = Provider.of<AppStateProvider>(context, listen: false).currentUser.isPaired;
 
     showDialog(
       context: context,
@@ -134,7 +136,7 @@ class _PlansScreenState extends State<PlansScreen> with SingleTickerProviderStat
                   items: [
                     DropdownMenuItem(value: 'both', child: Text(_t.text('task_assign_both'))),
                     DropdownMenuItem(value: 'me', child: Text(_t.text('task_assign_me'))),
-                    DropdownMenuItem(value: 'partner', child: Text(_t.text('task_assign_partner'))),
+                    if (isPaired) DropdownMenuItem(value: 'partner', child: Text(_t.text('task_assign_partner'))),
                   ],
                   onChanged: (val) {
                     if (val != null) setModalState(() => assignedTo = val);

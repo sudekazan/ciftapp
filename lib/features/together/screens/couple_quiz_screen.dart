@@ -5,6 +5,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/providers/together_provider.dart';
 import '../widgets/pack_selector.dart';
+import '../widgets/solo_compare_banner.dart';
 
 class CoupleQuizScreen extends StatefulWidget {
   const CoupleQuizScreen({super.key});
@@ -39,49 +40,52 @@ class _CoupleQuizScreenState extends State<CoupleQuizScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Score Banner
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: AppColors.purpleGradient,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+            if (!appState.currentUser.isPaired)
+              const SoloCompareBanner(gradient: AppColors.purpleGradient, icon: Icons.stars_rounded)
+            else
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: AppColors.purpleGradient,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
                     ),
-                    child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.textf('quiz_score', {'p': bothAnswered == 0 ? 0 : ((matchCount / bothAnswered) * 100).round()}),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.textf('quiz_score', {'p': bothAnswered == 0 ? 0 : ((matchCount / bothAnswered) * 100).round()}),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.textf('quiz_score_sub', {'n': matchCount, 'total': bothAnswered}),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontSize: 13,
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.textf('quiz_score_sub', {'n': matchCount, 'total': bothAnswered}),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 16),
             PackSelector(
               packs: togetherProvider.quizPacks,
